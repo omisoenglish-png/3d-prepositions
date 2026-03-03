@@ -43,21 +43,24 @@
   <div id="canvas-container"></div>
 
   <!-- UI Overlay -->
-  <div class="fixed bottom-0 left-0 w-full flex flex-col items-center pointer-events-none p-4 pb-6 z-10">
+  <div
+    class="fixed bottom-0 left-0 w-full flex flex-col landscape:flex-row items-center pointer-events-none p-4 pb-6 landscape:p-2 landscape:pb-2 landscape:items-end z-10">
 
     <!-- Explanation Area -->
     <div
-      class="mb-4 p-4 rounded-xl bg-black/70 border border-cyan-500/50 backdrop-blur-md max-w-4xl w-full text-center pointer-events-auto transition-all shadow-[0_0_15px_rgba(0,255,255,0.2)]">
-      <h2 id="explanation-title" class="text-3xl font-gaming font-bold text-cyan-400 mb-2 tracking-widest leading-none">
+      class="mb-4 landscape:mb-0 landscape:mr-4 p-4 landscape:p-2 rounded-xl bg-black/70 border border-cyan-500/50 backdrop-blur-md max-w-4xl landscape:max-w-2xl w-full text-center landscape:text-left pointer-events-auto transition-all shadow-[0_0_15px_rgba(0,255,255,0.2)]">
+      <h2 id="explanation-title"
+        class="text-3xl landscape:text-xl font-gaming font-bold text-cyan-400 mb-2 landscape:mb-1 tracking-widest leading-none landscape:inline-block landscape:mr-3">
         PREPOSITIONS</h2>
-      <p id="explanation-text" class="text-lg text-gray-200">全33個の前置詞の空間的なコアイメージを確認しましょう。ボタンを選択してください。</p>
+      <p id="explanation-text" class="text-lg landscape:text-sm text-gray-200 landscape:inline-block">
+        全33個の前置詞の空間的なコアイメージを確認しましょう。<br />リストから選択してください。</p>
     </div>
 
     <!-- Preposition Selector (Dropdown for Mobile/Desktop) -->
     <div
-      class="w-full max-w-sm pointer-events-auto bg-black/40 p-2 rounded border border-cyan-900 overflow-hidden relative mt-2 text-center shadow-[0_0_10px_rgba(0,255,255,0.2)] mx-auto">
+      class="w-full max-w-sm landscape:max-w-[200px] pointer-events-auto bg-black/40 p-2 landscape:p-1 flex-shrink-0 rounded border border-cyan-900 overflow-hidden relative mt-2 landscape:mt-0 text-center shadow-[0_0_10px_rgba(0,255,255,0.2)] mx-auto landscape:mx-0">
       <select id="preposition-select"
-        class="w-full bg-transparent text-cyan-400 font-gaming font-bold text-xl outline-none appearance-none text-center cursor-pointer p-2">
+        class="w-full bg-transparent text-cyan-400 font-gaming font-bold text-xl landscape:text-base outline-none appearance-none text-center cursor-pointer p-2 landscape:p-1">
         <option value="" disabled selected>-- 前置詞を選択 --</option>
         <!-- Options injected here by JS -->
       </select>
@@ -239,9 +242,9 @@
     objects.sphere = sphere;
 
     // 8. Companion Sphere (for 'with', 'as')
-    // Made significantly brighter yellow-green per user request
+    // Made unmistakably bright yellow-green
     const companionMat = new THREE.MeshStandardMaterial({
-      color: 0xccee00, emissive: 0x99ff00, emissiveIntensity: 0.9, roughness: 0.2, metalness: 0.1
+      color: 0xffff00, emissive: 0xccff00, emissiveIntensity: 1.0, roughness: 0.2, metalness: 0.1
     });
     const companionSphere = new THREE.Mesh(sphereGeo, companionMat);
     scene.add(companionSphere);
@@ -807,7 +810,12 @@
 
     function updateUI(prep) {
       document.getElementById('explanation-title').innerText = prepositions[prep].en || prep;
-      document.getElementById('explanation-text').innerText = prepositions[prep].ja;
+      // Add natural HTML line breaks for better mobile readability
+      let formattedJa = prepositions[prep].ja;
+      formattedJa = formattedJa.replace(/、/g, '、<br/>'); // break after commas
+      formattedJa = formattedJa.replace(/。（/g, '。<br/>（'); // break before parenthetical notes
+
+      document.getElementById('explanation-text').innerHTML = formattedJa;
 
       // Sync select dropdown if animation was triggered programmatically
       const prepSelect = document.getElementById('preposition-select');
