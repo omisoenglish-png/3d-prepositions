@@ -35,50 +35,6 @@
     .neon-text {
       text-shadow: 0 0 5px #fff, 0 0 10px #fff, 0 0 20px #0ff, 0 0 40px #0ff, 0 0 80px #0ff;
     }
-
-    /* Custom Scrollbar for the buttons container */
-    ::-webkit-scrollbar {
-      width: 8px;
-    }
-
-    ::-webkit-scrollbar-track {
-      background: rgba(0, 20, 40, 0.6);
-      border-radius: 4px;
-    }
-
-    ::-webkit-scrollbar-thumb {
-      background: rgba(0, 255, 255, 0.5);
-      border-radius: 4px;
-    }
-
-    ::-webkit-scrollbar-thumb:hover {
-      background: rgba(0, 255, 255, 0.8);
-    }
-
-    .neon-btn {
-      position: relative;
-      background: rgba(0, 20, 40, 0.6);
-      border: 1px solid #0ff;
-      color: #fff;
-      text-transform: lowercase;
-      letter-spacing: 1px;
-      transition: 0.3s;
-      box-shadow: 0 0 5px #0ff inset, 0 0 5px #0ff;
-      backdrop-filter: blur(4px);
-      flex: 0 0 auto;
-    }
-
-    .neon-btn:hover {
-      background: #0ff;
-      color: #000;
-      box-shadow: 0 0 10px #0ff, 0 0 20px #0ff, 0 0 40px #0ff;
-    }
-
-    .neon-btn.active {
-      background: #0ff;
-      color: #000;
-      box-shadow: 0 0 10px #0ff, 0 0 20px #0ff, 0 0 40px #0ff;
-    }
   </style>
 </head>
 
@@ -97,11 +53,20 @@
       <p id="explanation-text" class="text-lg text-gray-200">全33個の前置詞の空間的なコアイメージを確認しましょう。ボタンを選択してください。</p>
     </div>
 
-    <!-- Buttons Container (Scrollable) -->
-    <div class="w-full max-w-5xl pointer-events-auto bg-black/40 p-3 rounded border border-cyan-900 overflow-hidden">
-      <!-- Added max-h-40 for scroll on smaller screens or lots of buttons -->
-      <div id="buttons-grid" class="flex flex-wrap justify-center gap-2 max-h-48 overflow-y-auto w-full pr-2">
-        <!-- Buttons injected here by JS -->
+    <!-- Preposition Selector (Dropdown for Mobile/Desktop) -->
+    <div
+      class="w-full max-w-sm pointer-events-auto bg-black/40 p-2 rounded border border-cyan-900 overflow-hidden relative mt-2 text-center shadow-[0_0_10px_rgba(0,255,255,0.2)] mx-auto">
+      <select id="preposition-select"
+        class="w-full bg-transparent text-cyan-400 font-gaming font-bold text-xl outline-none appearance-none text-center cursor-pointer p-2">
+        <option value="" disabled selected>-- 前置詞を選択 --</option>
+        <!-- Options injected here by JS -->
+      </select>
+      <!-- Custom dropdown arrow -->
+      <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-cyan-400">
+        <svg class="fill-current h-6 w-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+          <path
+            d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
+        </svg>
       </div>
     </div>
   </div>
@@ -308,12 +273,25 @@
     box1.visible = true;
     sphere.visible = true;
 
-    // Window Resize
-    window.addEventListener('resize', () => {
-      camera.aspect = window.innerWidth / window.innerHeight;
+    // Window Resize & Orientation Change
+    function updateCameraForOrientation() {
+      const aspect = window.innerWidth / window.innerHeight;
+      camera.aspect = aspect;
+      // If portrait (mobile vertical), set FOV wider so the 3D scene doesn't clip
+      if (aspect < 1) {
+        camera.fov = 70;
+      } else {
+        camera.fov = 45;
+      }
       camera.updateProjectionMatrix();
       renderer.setSize(window.innerWidth, window.innerHeight);
-    });
+    }
+
+    window.addEventListener('resize', updateCameraForOrientation);
+    window.addEventListener('orientationchange', updateCameraForOrientation);
+
+    // Initial call to set correct FOV
+    updateCameraForOrientation();
 
     // Render loop
     function animate() {
@@ -363,13 +341,19 @@
       as: { en: "as", ja: "イコール関係。役割や状態が同じであることを表す。" }
     };
 
-    const buttonsGrid = document.getElementById('buttons-grid');
+    const prepSelect = document.getElementById('preposition-select');
     Object.keys(prepositions).forEach(prep => {
-      const btn = document.createElement('button');
-      btn.className = 'neon-btn font-gaming font-bold py-2 px-4 rounded-lg text-sm sm:text-sm';
-      btn.innerText = prep;
-      btn.onclick = () => playAnim(prep);
-      buttonsGrid.appendChild(btn);
+      const opt = document.createElement('option');
+      opt.value = prep;
+      opt.innerText = prep;
+      opt.className = 'bg-gray-900 text-cyan-400 font-sans'; // System font for dropdown options readability
+      prepSelect.appendChild(opt);
+    });
+
+    prepSelect.addEventListener('change', (e) => {
+      if (e.target.value) {
+        playAnim(e.target.value);
+      }
     });
 
     // -------------------------
@@ -825,14 +809,11 @@
       document.getElementById('explanation-title').innerText = prepositions[prep].en || prep;
       document.getElementById('explanation-text').innerText = prepositions[prep].ja;
 
-      document.querySelectorAll('.neon-btn').forEach(btn => {
-        btn.classList.remove('active');
-        if (btn.innerText === prep) {
-          btn.classList.add('active');
-          // simple auto-scroll active button into view within its container
-          btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-        }
-      });
+      // Sync select dropdown if animation was triggered programmatically
+      const prepSelect = document.getElementById('preposition-select');
+      if (prepSelect.value !== prep) {
+        prepSelect.value = prep;
+      }
     }
 
     window.playAnim = function (prep) {
