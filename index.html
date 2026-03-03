@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>3D Preposition Explorer (33 Words)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@400;700&display=swap"
+    rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      background-color: #050510;
+      font-family: 'Noto Sans JP', sans-serif;
+    }
+
+    .font-gaming {
+      font-family: 'Orbitron', 'Noto Sans JP', sans-serif;
+    }
+
+    #canvas-container {
+      width: 100vw;
+      height: 100vh;
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: -1;
+    }
+
+    .neon-text {
+      text-shadow: 0 0 5px #fff, 0 0 10px #fff, 0 0 20px #0ff, 0 0 40px #0ff, 0 0 80px #0ff;
+    }
+
+    /* Custom Scrollbar for the buttons container */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: rgba(0, 20, 40, 0.6);
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: rgba(0, 255, 255, 0.5);
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(0, 255, 255, 0.8);
+    }
+
+    .neon-btn {
+      position: relative;
+      background: rgba(0, 20, 40, 0.6);
+      border: 1px solid #0ff;
+      color: #fff;
+      text-transform: lowercase;
+      letter-spacing: 1px;
+      transition: 0.3s;
+      box-shadow: 0 0 5px #0ff inset, 0 0 5px #0ff;
+      backdrop-filter: blur(4px);
+      flex: 0 0 auto;
+    }
+
+    .neon-btn:hover {
+      background: #0ff;
+      color: #000;
+      box-shadow: 0 0 10px #0ff, 0 0 20px #0ff, 0 0 40px #0ff;
+    }
+
+    .neon-btn.active {
+      background: #0ff;
+      color: #000;
+      box-shadow: 0 0 10px #0ff, 0 0 20px #0ff, 0 0 40px #0ff;
+    }
+  </style>
+</head>
+
+<body class="text-white">
+
+  <div id="canvas-container"></div>
+
+  <!-- UI Overlay -->
+  <div class="fixed bottom-0 left-0 w-full flex flex-col items-center pointer-events-none p-4 pb-6 z-10">
+
+    <!-- Explanation Area -->
+    <div
+      class="mb-4 p-4 rounded-xl bg-black/70 border border-cyan-500/50 backdrop-blur-md max-w-4xl w-full text-center pointer-events-auto transition-all shadow-[0_0_15px_rgba(0,255,255,0.2)]">
+      <h2 id="explanation-title" class="text-3xl font-gaming font-bold text-cyan-400 mb-2 tracking-widest leading-none">
+        PREPOSITIONS</h2>
+      <p id="explanation-text" class="text-lg text-gray-200">全33個の前置詞の空間的なコアイメージを確認しましょう。ボタンを選択してください。</p>
+    </div>
+
+    <!-- Buttons Container (Scrollable) -->
+    <div class="w-full max-w-5xl pointer-events-auto bg-black/40 p-3 rounded border border-cyan-900 overflow-hidden">
+      <!-- Added max-h-40 for scroll on smaller screens or lots of buttons -->
+      <div id="buttons-grid" class="flex flex-wrap justify-center gap-2 max-h-48 overflow-y-auto w-full pr-2">
+        <!-- Buttons injected here by JS -->
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // -------------------------
+    // Set up Three.js Scene
+    // -------------------------
+    const container = document.getElementById('canvas-container');
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(0x050510, 0.02);
+
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+    // Move camera further back and slightly higher so objects appear higher on screen, avoiding the bottom UI
+    camera.position.set(10, 8, 18);
+    // Look slightly above the center
+    camera.lookAt(0, 2, 0);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(window.devicePixelRatio);
+    container.appendChild(renderer.domElement);
+
+    // Lights
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
+    scene.add(ambientLight);
+
+    const pointLight = new THREE.PointLight(0x00ffff, 1, 50);
+    pointLight.position.set(5, 10, 5);
+    scene.add(pointLight);
+
+    const pointLight2 = new THREE.PointLight(0xff00ff, 1, 50);
+    pointLight2.position.set(-5, -5, -5);
+    scene.add(pointLight2);
+
+    // Stars Background
+    const starsGeo = new THREE.BufferGeometry();
+    const starsPts = 1000;
+    const posArray = new Float32Array(starsPts * 3);
+    for (let i = 0; i < starsPts * 3; i++) {
+      posArray[i] = (Math.random() - 0.5) * 100;
+    }
+    starsGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+
+    // Create a circular gradient texture for stars to avoid square look
+    const canvas = document.createElement('canvas');
+    canvas.width = 16;
+    canvas.height = 16;
+    const ctx = canvas.getContext('2d');
+    const grad = ctx.createRadialGradient(8, 8, 0, 8, 8, 8);
+    grad.addColorStop(0, 'rgba(255, 255, 255, 1)');
+    grad.addColorStop(0.2, 'rgba(255, 255, 255, 0.8)');
+    grad.addColorStop(0.5, 'rgba(0, 255, 255, 0.4)');
+    grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 16, 16);
+    const starTex = new THREE.CanvasTexture(canvas);
+
+    const starsMat = new THREE.PointsMaterial({
+      size: 0.5,
+      color: 0xffffff,
+      transparent: true,
+      opacity: 0.8,
+      map: starTex,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false
+    });
+    const stars = new THREE.Points(starsGeo, starsMat);
+    scene.add(stars);
+
+    // Global Offset to keep everything above the UI
+    const globalYOffset = 0;
+
+    // Materials
+    const boxMatTemplate = {
+      color: 0x001133, emissive: 0x004488, emissiveIntensity: 0.5,
+      transparent: true, opacity: 0.8, roughness: 0.1, metalness: 0.8
+    };
+    const edgesMat = new THREE.LineBasicMaterial({ color: 0x00ffff, linewidth: 2 });
+
+    const sphereMatTemplate = {
+      color: 0x330033, emissive: 0xff00ff, emissiveIntensity: 0.8,
+      roughness: 0.2, metalness: 0.8
+    };
+
+    // -------------------------
+    // Objects Setup
+    // -------------------------
+    const objects = {}; // store scene objects to toggle visibility
+
+    // 1. Box 1 (Main Reference)
+    const boxSize = 4;
+    const boxGeo = new THREE.BoxGeometry(boxSize, boxSize, boxSize);
+    const box1Mat = new THREE.MeshStandardMaterial({ ...boxMatTemplate });
+    const box1 = new THREE.Mesh(boxGeo, box1Mat);
+    box1.add(new THREE.LineSegments(new THREE.EdgesGeometry(boxGeo), edgesMat));
+    scene.add(box1);
+    objects.box1 = box1;
+
+    // 2. Box 2 (For 'between')
+    const box2Mat = new THREE.MeshStandardMaterial({ ...boxMatTemplate });
+    const box2 = new THREE.Mesh(boxGeo, box2Mat);
+    box2.add(new THREE.LineSegments(new THREE.EdgesGeometry(boxGeo), edgesMat));
+    box2.position.set(8, globalYOffset, 0); // Positioned to the right
+    scene.add(box2);
+    objects.box2 = box2;
+
+    // 3. BoxGroup (For 'among' - many smaller boxes around)
+    const boxGroup = new THREE.Group();
+    const smallBoxGeo = new THREE.BoxGeometry(2, 2, 2);
+    for (let i = 0; i < 6; i++) {
+      const smBox = new THREE.Mesh(smallBoxGeo, new THREE.MeshStandardMaterial({ ...boxMatTemplate }));
+      smBox.add(new THREE.LineSegments(new THREE.EdgesGeometry(smallBoxGeo), edgesMat));
+      // Distribute in a circle around center
+      const angle = (i / 6) * Math.PI * 2;
+      smBox.position.set(Math.cos(angle) * 6, globalYOffset, Math.sin(angle) * 6);
+      boxGroup.add(smBox);
+    }
+    scene.add(boxGroup);
+    objects.boxGroup = boxGroup;
+
+    // 4. Time Axis / Line / Path
+    const pathGeo = new THREE.CylinderGeometry(0.1, 0.1, 20, 8);
+    pathGeo.rotateZ(Math.PI / 2); // Make horizontal
+    const pathMat = new THREE.MeshStandardMaterial({ color: 0xffaa00, emissive: 0xff5500, emissiveIntensity: 0.8 });
+    const pathLine = new THREE.Mesh(pathGeo, pathMat);
+    scene.add(pathLine);
+    objects.pathLine = pathLine;
+
+    // 5. Plane / Surface (For 'across' / 'along')
+    const planeGeo = new THREE.PlaneGeometry(20, 10);
+    planeGeo.rotateX(-Math.PI / 2);
+    const planeMat = new THREE.MeshStandardMaterial({ color: 0x002211, emissive: 0x005522, emissiveIntensity: 0.3, transparent: true, opacity: 0.5, side: THREE.DoubleSide });
+    const surfacePlane = new THREE.Mesh(planeGeo, planeMat);
+    scene.add(surfacePlane);
+    objects.surfacePlane = surfacePlane;
+
+    // Road (For 'across' / 'along')
+    const roadGroup = new THREE.Group();
+    const roadBase = new THREE.Mesh(
+      new THREE.BoxGeometry(6, 0.05, 24),
+      new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.9 })
+    );
+    roadGroup.add(roadBase);
+    // Subtle white/gray center line
+    const centerLineMat = new THREE.MeshBasicMaterial({ color: 0xaaaaaa, transparent: true, opacity: 0.8 });
+    for (let i = -11; i <= 11; i += 2) {
+      const dash = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.06, 1), centerLineMat);
+      dash.position.set(0, 0, i);
+      roadGroup.add(dash);
+    }
+    roadGroup.rotation.y = Math.PI / 4; // Top-left to bottom-right
+    scene.add(roadGroup);
+    objects.roadGroup = roadGroup;
+
+    // 6. Wall (for 'against')
+    const wallGeo = new THREE.BoxGeometry(0.5, 6, 6);
+    const wallMat = new THREE.MeshStandardMaterial({ ...boxMatTemplate }); // Match other boxes
+    const wall = new THREE.Mesh(wallGeo, wallMat);
+    wall.add(new THREE.LineSegments(new THREE.EdgesGeometry(wallGeo), edgesMat)); // Match other boxes' edges
+    scene.add(wall);
+    objects.wall = wall;
+
+    // 7. Main Sphere (Target Object)
+    const sphereRadius = 0.8;
+    const sphereGeo = new THREE.SphereGeometry(sphereRadius, 32, 32);
+    const sphereMat = new THREE.MeshStandardMaterial({ ...sphereMatTemplate });
+    const sphere = new THREE.Mesh(sphereGeo, sphereMat);
+    scene.add(sphere);
+    objects.sphere = sphere;
+
+    // 8. Companion Sphere (for 'with', 'as')
+    // Made significantly brighter yellow-green per user request
+    const companionMat = new THREE.MeshStandardMaterial({
+      color: 0xccee00, emissive: 0x99ff00, emissiveIntensity: 0.9, roughness: 0.2, metalness: 0.1
+    });
+    const companionSphere = new THREE.Mesh(sphereGeo, companionMat);
+    scene.add(companionSphere);
+    objects.companionSphere = companionSphere;
+
+    // 9. Cutout Sphere (for 'of')
+    const holeMat = new THREE.MeshBasicMaterial({ color: 0x050510 }); // matches background to erase part of box
+    const holeSphere = new THREE.Mesh(new THREE.SphereGeometry(sphereRadius * 0.8, 32, 32), holeMat);
+    scene.add(holeSphere);
+    objects.holeSphere = holeSphere;
+
+    // Main Point (for 'at')
+    const pointGeo = new THREE.SphereGeometry(0.3, 16, 16);
+    const pointMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+    const mainPoint = new THREE.Mesh(pointGeo, pointMat);
+    scene.add(mainPoint);
+    objects.mainPoint = mainPoint;
+
+
+    // Grid Helper (Floor)
+    const gridHelper = new THREE.GridHelper(30, 30, 0x00ffff, 0x003366);
+    gridHelper.position.y = -boxSize / 2 - 2 + globalYOffset;
+    gridHelper.material.transparent = true;
+    gridHelper.material.opacity = 0.3;
+    scene.add(gridHelper);
+
+    // Initial state: conceal everything except box1 and sphere
+    Object.values(objects).forEach(obj => obj.visible = false);
+    box1.visible = true;
+    sphere.visible = true;
+
+    // Window Resize
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    // Render loop
+    function animate() {
+      requestAnimationFrame(animate);
+      stars.rotation.y += 0.0005;
+      stars.rotation.x += 0.0002;
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    // -------------------------
+    // Prepositions Data
+    // -------------------------
+    const prepositions = {
+      in: { en: "in", ja: "空間や容器の中にすっぽり入っている、包まれている状態。" },
+      at: { en: "at", ja: "地図上の「点」を指し示すように、特定の場所や時点にある状態。" },
+      on: { en: "on", ja: "何かの表面にぴったり接触して乗っている、または付着している状態。" },
+      off: { en: "off", ja: "接触していた面から離れる、切断される状態。" },
+      near: { en: "near", ja: "距離的・時間的に比較的近い位置にある状態。（くっついてはいない）" },
+      by: { en: "by", ja: "何かのすぐそば（近接）、またはそれを経由・手段としている状態。" },
+      above: { en: "above", ja: "基準より高い位置にある状態。（真上とは限らないが、より高い）" },
+      below: { en: "below", ja: "基準より低い位置にある状態。（真下とは限らない）" },
+      over: { en: "over", ja: "何かを乗り越える弧の動き、または覆いかぶさって真上にある状態。" },
+      under: { en: "under", ja: "何かの真下で覆われている、影響下にある状態。" },
+      between: { en: "between", ja: "はっきりと区別できる２つ（稀に複数）の間に位置する状態。" },
+      among: { en: "among", ja: "３つ以上の個別のものに取り囲まれている、群集の中にいる状態。" },
+      behind: { en: "behind", ja: "何かの背後に隠れている、後ろについていく状態。" },
+      against: { en: "against", ja: "何かに対抗して押し当てる、または逆らうベクトルがある状態。" },
+      to: { en: "to", ja: "明確な到達点（ゴール）に向かっている方向・到達。" },
+      toward: { en: "toward", ja: "ある方向に向いていること（到達点を示すわけではない）。" },
+      from: { en: "from", ja: "起点（スタート地点や出どころ）から離れていく方向。" },
+      "out of": { en: "out of", ja: "内側（中）から外へ出ていく動き。" },
+      into: { en: "into", ja: "外側から立体的な中へ入り込んでいく動きと変化。" },
+      through: { en: "through", ja: "トンネルや空間の一方の端から入り、もう一方へ通り抜ける状態。" },
+      across: { en: "across", ja: "平面や空間を横切る、一方の端から反対側へ渡る状態。" },
+      along: { en: "along", ja: "線状のもの（道や川など）に沿って平行に進む、または位置する状態。" },
+      around: { en: "around", ja: "何かの周りをぐるりと回る、または周辺に散らばる状態。" },
+      about: { en: "about", ja: "中心となるものの周辺にある、漠然と関連している状態。" },
+      before: { en: "before", ja: "時間軸（または順序）において、基準より前（左側）にある状態。" },
+      after: { en: "after", ja: "時間軸（または順序）において、基準より後（右側）にある状態。" },
+      during: { en: "during", ja: "ある特定の期間の最初から最後まで、またはその期間内のどこか。" },
+      since: { en: "since", ja: "過去のある時点を起点として、そこからずっと続いている状態。" },
+      "until (till)": { en: "until (till)", ja: "未来のある時点まで、その状態がずっと継続する限界点。" },
+      for: { en: "for", ja: "目的に向う方向性（ターゲット）や、対象への交換・恩恵・期間。" },
+      with: { en: "with", ja: "つながりや同伴。一緒にある、または道具として持っている状態。" },
+      of: { en: "of", ja: "全体の中に組み込まれている「切れない一部（部分と全体・性質・所属など）」を表す。" },
+      as: { en: "as", ja: "イコール関係。役割や状態が同じであることを表す。" }
+    };
+
+    const buttonsGrid = document.getElementById('buttons-grid');
+    Object.keys(prepositions).forEach(prep => {
+      const btn = document.createElement('button');
+      btn.className = 'neon-btn font-gaming font-bold py-2 px-4 rounded-lg text-sm sm:text-sm';
+      btn.innerText = prep;
+      btn.onclick = () => playAnim(prep);
+      buttonsGrid.appendChild(btn);
+    });
+
+    // -------------------------
+    // Animation Engine
+    // -------------------------
+    let currentTimeline = null;
+    let cameraTimeline = null;
+
+    const topSurfaceY = (boxSize / 2) + sphereRadius;
+    const bottomSurfaceY = -(boxSize / 2) - sphereRadius - 0.2;
+
+    function resetScene() {
+      if (currentTimeline) currentTimeline.kill();
+      if (cameraTimeline) cameraTimeline.kill();
+      gsap.killTweensOf(Object.values(objects).map(o => o.position));
+      gsap.killTweensOf(Object.values(objects).map(o => o.rotation));
+      gsap.killTweensOf(camera.position);
+
+      // Reset visibility and main materials
+      Object.keys(objects).forEach(k => {
+        objects[k].visible = false;
+        // default opacities
+        if (objects[k].material && objects[k].material.transparent) {
+          objects[k].material.opacity = 0.8;
+          if (k === 'surfacePlane') objects[k].material.opacity = 0.5;
+        }
+      });
+      box1Mat.transparent = true;
+      box1Mat.opacity = 0.8;
+      box1Mat.emissiveIntensity = 0.5;
+
+      // Bring Camera to default (adjusted to position the scene higher on the screen by lowering the camera)
+      // To shift objects UP on the screen, we move the camera DOWN relative to them, or tilt the camera UP.
+      gsap.to(camera.position, {
+        x: 10, y: 4, z: 18,
+        duration: 1,
+        ease: "power2.out",
+        onUpdate: () => camera.lookAt(0, -2, 0)
+      });
+
+      // Reset default positions for commonly moved objects to prevent state bleeding
+      if (objects.box1) objects.box1.position.set(0, globalYOffset, 0);
+      if (objects.wall) objects.wall.position.set(2, globalYOffset, 0);
+      if (objects.companionSphere) objects.companionSphere.position.set(0, globalYOffset, 0);
+    }
+
+    // A dictionary of animation setup functions mapped to keys
+    const animations = {
+      in: () => {
+        objects.box1.visible = true;
+        objects.box1.position.set(0, globalYOffset, 0);
+        objects.sphere.visible = true;
+        sphere.position.set(0, 8 + globalYOffset, 0);
+        box1Mat.transparent = true;
+        currentTimeline = gsap.timeline();
+        currentTimeline.to(sphere.position, { y: globalYOffset, duration: 1.5, ease: "bounce.out" })
+          .to(box1Mat, { opacity: 0.2, emissiveIntensity: 0.1, duration: 0.5 }, "-=1.0");
+      },
+      at: () => {
+        objects.mainPoint.visible = true;
+        objects.mainPoint.position.set(0, globalYOffset, 0);
+        objects.sphere.visible = true;
+        sphere.position.set(-6, 4 + globalYOffset, 0);
+        // Snap to point exactly
+        currentTimeline = gsap.to(sphere.position, { x: 0, y: 0.5 + globalYOffset, z: 0, duration: 1.5, ease: "power3.out" });
+      },
+      on: () => {
+        objects.box1.visible = true;
+        objects.box1.position.set(0, globalYOffset, 0);
+        objects.sphere.visible = true;
+        sphere.position.set(0, 8 + globalYOffset, 0);
+        currentTimeline = gsap.to(sphere.position, { y: topSurfaceY + globalYOffset, duration: 1.5, ease: "bounce.out" });
+      },
+      off: () => {
+        objects.box1.visible = true;
+        objects.box1.position.set(0, globalYOffset, 0);
+        objects.sphere.visible = true;
+        sphere.position.set(0, topSurfaceY + globalYOffset, 0);
+
+        // Break contact: jump off like a cat (up, forward, and land)
+        currentTimeline = gsap.timeline();
+        // Move horizontally and rotate forward
+        currentTimeline.to(sphere.position, { x: 5, duration: 1.2, ease: "power1.inOut" }, 0)
+          .to(sphere.rotation, { z: -Math.PI, duration: 1.2, ease: "power1.inOut" }, 0);
+
+        // Vertical arc: jump up slightly, then fall to the ground with a bounce
+        currentTimeline.to(sphere.position, { y: topSurfaceY + 2 + globalYOffset, duration: 0.5, ease: "power2.out" }, 0)
+          .to(sphere.position, { y: -2 + sphereRadius + globalYOffset, duration: 0.7, ease: "bounce.out" }, 0.5);
+      },
+      near: () => {
+        objects.box1.visible = true;
+        objects.box1.position.set(0, globalYOffset, 0);
+        objects.sphere.visible = true;
+        sphere.position.set(8, globalYOffset, 0);
+        // Move somewhat close, but maintain a clear distant gap to distinguish from 'by'
+        currentTimeline = gsap.to(sphere.position, { x: boxSize / 2 + 3.0, duration: 1.5, ease: "power2.out" });
+      },
+      by: () => {
+        objects.box1.visible = true;
+        objects.box1.position.set(0, globalYOffset, 0);
+        objects.sphere.visible = true;
+        sphere.position.set(8, globalYOffset, 0); // Start from the exact same side as near
+        // Passing right by it (much closer than 'near')
+        currentTimeline = gsap.timeline();
+        // Stop very close and just pass slightly in front of it if we want, or just stop next to it.
+        // Let's just have it stop right next to the box, so the contrast with 'near' is obvious.
+        currentTimeline.to(sphere.position, { x: boxSize / 2 + 0.9, duration: 1.5, ease: "power2.out" });
+      },
+      above: () => {
+        objects.box1.visible = true;
+        objects.box1.position.set(0, globalYOffset, 0);
+        objects.sphere.visible = true;
+        sphere.position.set(0, topSurfaceY + 0.5 + globalYOffset, 0);
+        currentTimeline = gsap.to(sphere.position, { y: topSurfaceY + 2.5 + globalYOffset, duration: 2, ease: "power1.inOut", yoyo: true, repeat: -1 });
+      },
+      below: () => {
+        objects.box1.visible = true;
+        objects.box1.position.set(0, globalYOffset, 0);
+        objects.sphere.visible = true;
+        sphere.position.set(2, bottomSurfaceY - 0.5 + globalYOffset, 0);
+        currentTimeline = gsap.to(sphere.position, { y: bottomSurfaceY - 2 + globalYOffset, duration: 2, ease: "power1.inOut", yoyo: true, repeat: -1 });
+      },
+      over: () => {
+        objects.box1.visible = true;
+        objects.box1.position.set(0, globalYOffset, 0);
+        objects.sphere.visible = true;
+        sphere.position.set(-6, -1 + globalYOffset, 0);
+        currentTimeline = gsap.timeline();
+        currentTimeline.to(sphere.position, { x: 6, duration: 2, ease: "linear" }, 0)
+          .to(sphere.position, { y: topSurfaceY + 2 + globalYOffset, duration: 1, ease: "power2.out", yoyo: true, repeat: 1 }, 0);
+      },
+      under: () => {
+        objects.box1.visible = true;
+        objects.box1.position.set(0, globalYOffset, 0);
+        objects.sphere.visible = true;
+        sphere.position.set(8, bottomSurfaceY + globalYOffset, 0);
+        currentTimeline = gsap.to(sphere.position, { x: 0, duration: 1.5, ease: "back.out(1.5)" });
+      },
+      between: () => {
+        objects.box1.visible = true;
+        objects.box2.visible = true;
+        objects.sphere.visible = true;
+        // set boxes apart
+        objects.box1.position.set(-4, globalYOffset, 0);
+        objects.box2.position.set(4, globalYOffset, 0);
+
+        sphere.position.set(0, 8 + globalYOffset, 0);
+        currentTimeline = gsap.to(sphere.position, { y: globalYOffset, duration: 1.5, ease: "bounce.out" });
+      },
+      among: () => {
+        objects.boxGroup.visible = true;
+        objects.boxGroup.position.set(0, 0, 0);
+        objects.sphere.visible = true;
+        sphere.position.set(0, 10 + globalYOffset, 0);
+        // Add "bounce.out" so it lands and hops exactly like "between" does
+        currentTimeline = gsap.to(sphere.position, { y: globalYOffset, duration: 2, ease: "bounce.out" });
+      },
+      behind: () => {
+        objects.box1.visible = true;
+        objects.sphere.visible = true;
+
+        objects.box1.position.set(0, globalYOffset, 0);
+        sphere.position.set(0, globalYOffset, -5); // Behind the box relative to camera
+
+        // Use standard camera Y to lower them on the screen, but tilt up slightly if needed
+        // x: 0 is important for behind so we view it directly from the front
+        cameraTimeline = gsap.to(camera.position, {
+          x: 0, y: 6, z: 14,
+          duration: 1.5,
+          ease: "power2.out",
+          onUpdate: () => camera.lookAt(0, globalYOffset - 1, 0)
+        });
+
+        // Peek out
+        currentTimeline = gsap.timeline({ delay: 1.5, repeat: -1, yoyo: true });
+        currentTimeline.to(sphere.position, { x: 3, duration: 1, ease: "power1.inOut" })
+          .to(sphere.position, { x: -3, duration: 2, ease: "power1.inOut", delay: 1 });
+      },
+      against: () => {
+        objects.wall.visible = true;
+        objects.sphere.visible = true;
+        // Adjust height upward slightly as requested by user (between previous +1 and +3)
+        objects.wall.position.set(2, globalYOffset + 2, 0);
+        sphere.position.set(-6, globalYOffset + 2, 0);
+
+        currentTimeline = gsap.timeline();
+        // Fly and crash
+        currentTimeline.to(sphere.position, { x: 2 - 0.5 - sphereRadius, duration: 1, ease: "power3.in" })
+          .to(sphere.scale, { x: 0.6, y: 1.2, z: 1.2, duration: 0.1, yoyo: true, repeat: 1 }); // squish
+      },
+      to: () => {
+        objects.box1.visible = true;
+        objects.sphere.visible = true;
+        objects.box1.position.set(5, globalYOffset, 0);
+        sphere.position.set(-8, globalYOffset, 0);
+
+        currentTimeline = gsap.to(sphere.position, { x: 5 - boxSize / 2 - sphereRadius, duration: 1.5, ease: "power2.inOut" });
+      },
+      from: () => {
+        objects.box1.visible = true;
+        objects.sphere.visible = true;
+        objects.box1.position.set(-4, globalYOffset, 0);
+        sphere.position.set(-4 + boxSize / 2 + sphereRadius, globalYOffset, 0);
+
+        currentTimeline = gsap.to(sphere.position, { x: 8, duration: 2, ease: "power3.in" });
+      },
+      "out of": () => {
+        objects.box1.visible = true;
+        objects.sphere.visible = true;
+        objects.box1.position.set(0, globalYOffset, 0);
+        sphere.position.set(0, globalYOffset, 0);
+        box1Mat.transparent = true;
+        box1Mat.opacity = 0.2;
+
+        currentTimeline = gsap.to(sphere.position, {
+          x: 6, y: 3 + globalYOffset, z: 4, duration: 2, ease: "power2.out", delay: 0.5
+        });
+      },
+      into: () => {
+        objects.box1.visible = true;
+        objects.sphere.visible = true;
+        objects.box1.position.set(0, globalYOffset, 0);
+        sphere.position.set(-6, 4 + globalYOffset, 4);
+        box1Mat.transparent = true;
+        box1Mat.opacity = 0.8;
+
+        currentTimeline = gsap.timeline({ delay: 0.5 });
+        currentTimeline.to(sphere.position, { x: 0, y: globalYOffset, z: 0, duration: 1.5, ease: "power2.in" })
+          .to(box1Mat, { opacity: 0.2, duration: 0.3 }, "-=0.3");
+      },
+      through: () => {
+        objects.box1.visible = true;
+        objects.sphere.visible = true;
+        objects.box1.position.set(0, globalYOffset, 0);
+        sphere.position.set(0, globalYOffset, 8);
+        box1Mat.transparent = true;
+
+        currentTimeline = gsap.timeline();
+        currentTimeline.to(sphere.position, { z: -8, duration: 2.5, ease: "linear" }, 0)
+          .to(box1Mat, { opacity: 0.2, emissiveIntensity: 0.1, duration: 0.3 }, 0.8)
+          .to(box1Mat, { opacity: 0.8, emissiveIntensity: 0.5, duration: 0.3 }, 1.6);
+      },
+      across: () => {
+        // Use the diagonal road with center lines
+        objects.roadGroup.visible = true;
+        objects.roadGroup.position.set(0, globalYOffset, 0);
+
+        objects.sphere.visible = true;
+
+        // Start from outside the road on the left (bottom-left area)
+        // Road local width is 6 (x from -3 to 3). Left side is x=-5
+        const startX = -5 * 0.7071;
+        const startZ = 5 * 0.7071;
+        sphere.position.set(startX, sphereRadius + globalYOffset, startZ);
+
+        // Move clearly across the road to the outside right (top-right area)
+        const endX = 5 * 0.7071;
+        const endZ = -5 * 0.7071;
+        currentTimeline = gsap.to(sphere.position, { x: endX, z: endZ, duration: 2.5, ease: "linear" });
+      },
+      along: () => {
+        // Use the exact same diagonal road
+        objects.roadGroup.visible = true;
+        objects.roadGroup.position.set(0, globalYOffset, 0);
+
+        objects.sphere.visible = true;
+
+        // Position ON the road, visually on the right side of the screen (local x = +1.5)
+        const startX = (1.5 - 10) * 0.7071;
+        const startZ = (-1.5 - 10) * 0.7071; // math: x*sin(45) + z*cos(45)
+        sphere.position.set(startX, sphereRadius + globalYOffset, startZ);
+
+        // Move perfectly parallel down the length of the road
+        const endX = (1.5 + 10) * 0.7071;
+        const endZ = (-1.5 + 10) * 0.7071;
+        currentTimeline = gsap.to(sphere.position, { x: endX, z: endZ, duration: 4, ease: "linear" });
+      },
+      toward: () => {
+        objects.box1.visible = true;
+        objects.sphere.visible = true;
+        objects.box1.position.set(6, globalYOffset, -4);
+        sphere.position.set(-6, globalYOffset, 4);
+
+        // Moves in direction, doesn't necessarily hit it
+        currentTimeline = gsap.to(sphere.position, { x: 2, z: -1, duration: 2, ease: "power2.out" });
+      },
+      around: () => {
+        objects.box1.visible = true;
+        objects.sphere.visible = true;
+        objects.box1.position.set(0, globalYOffset, 0);
+        sphere.position.set(5, globalYOffset, 0);
+
+        // Orbit
+        const rotObj = { angle: 0 };
+        currentTimeline = gsap.to(rotObj, {
+          angle: Math.PI * 2,
+          duration: 3,
+          ease: "linear",
+          repeat: -1,
+          onUpdate: function () {
+            sphere.position.x = Math.cos(rotObj.angle) * 5;
+            sphere.position.z = Math.sin(rotObj.angle) * 5;
+          }
+        });
+      },
+      before: () => { // Time (Left)
+        objects.pathLine.visible = true;
+        objects.mainPoint.visible = true;
+        objects.sphere.visible = true;
+        objects.pathLine.position.set(0, globalYOffset, 0);
+        objects.mainPoint.position.set(0, globalYOffset, 0);
+
+        sphere.position.set(-5, globalYOffset, 0); // To the left
+        currentTimeline = gsap.to(sphere.position, { y: 1 + globalYOffset, duration: 0.5, yoyo: true, repeat: -1 });
+      },
+      after: () => { // Time (Right)
+        objects.pathLine.visible = true;
+        objects.mainPoint.visible = true;
+        objects.sphere.visible = true;
+        objects.pathLine.position.set(0, globalYOffset, 0);
+        objects.mainPoint.position.set(0, globalYOffset, 0);
+
+        sphere.position.set(5, globalYOffset, 0); // To the right
+        currentTimeline = gsap.to(sphere.position, { y: 1 + globalYOffset, duration: 0.5, yoyo: true, repeat: -1 });
+      },
+      since: () => {
+        objects.pathLine.visible = true;
+        objects.mainPoint.visible = true;
+        objects.sphere.visible = true;
+        objects.pathLine.position.set(0, globalYOffset, 0);
+        objects.mainPoint.position.set(-5, globalYOffset, 0); // The start point
+        sphere.position.set(-5, 1 + globalYOffset, 0); // Start
+
+        currentTimeline = gsap.to(sphere.position, {
+          x: 6, duration: 3, ease: "linear",
+          onUpdate: () => {
+            // leave a trail logic if we want, but simple movement is ok
+            sphere.scale.setLength(1 + (sphere.position.x + 5) * 0.1); // grows as time passes
+          }
+        });
+      },
+      "until (till)": () => {
+        objects.pathLine.visible = true;
+        objects.mainPoint.visible = true;
+        objects.sphere.visible = true;
+        objects.pathLine.position.set(0, globalYOffset, 0);
+        objects.mainPoint.position.set(5, globalYOffset, 0); // The limit point
+        sphere.position.set(-6, 1 + globalYOffset, 0);
+
+        // Match duration to 'since' (duration: 3) for the same feeling of time passing
+        currentTimeline = gsap.to(sphere.position, { x: 5, duration: 3, ease: "power2.in" });
+      },
+      during: () => {
+        objects.pathLine.visible = true;
+        objects.mainPoint.visible = true; // start
+        objects.sphere.visible = true;
+
+        objects.pathLine.position.set(0, globalYOffset, 0);
+        objects.mainPoint.position.set(-4, globalYOffset, 0);
+
+        // Add a second point for the end of the period (reusing companionSphere as a point)
+        objects.companionSphere.visible = true;
+        objects.companionSphere.scale.set(0.3, 0.3, 0.3); // Make it look like a point
+        objects.companionSphere.material.emissiveIntensity = 0; // turn off glow to look like a point
+        objects.companionSphere.material.color.setHex(0xffffff); // white point
+        objects.companionSphere.position.set(4, globalYOffset, 0);
+
+        // The sphere represents an event happening inside this period
+        sphere.position.set(-4, 1 + globalYOffset, 0);
+
+        // Move between the two points
+        currentTimeline = gsap.to(sphere.position, {
+          x: 4, duration: 3, ease: "linear",
+          onUpdate: () => {
+            // Pulse to show "ongoing activity" during this time
+            const pulse = 1 + Math.sin(Date.now() * 0.01) * 0.3;
+            sphere.scale.set(pulse, pulse, pulse);
+          }
+        });
+      },
+      about: () => {
+        objects.box1.visible = true;
+        objects.box1.position.set(0, globalYOffset, 0);
+        objects.sphere.visible = true;
+        sphere.position.set(3, 3 + globalYOffset, 3);
+
+        // Random wandering near the object
+        currentTimeline = gsap.timeline({ repeat: -1, yoyo: true });
+        currentTimeline.to(sphere.position, { x: -3, y: 1 + globalYOffset, z: 4, duration: 1.5, ease: "sine.inOut" })
+          .to(sphere.position, { x: -2, y: 4 + globalYOffset, z: -3, duration: 1.5, ease: "sine.inOut" })
+          .to(sphere.position, { x: 4, y: 2 + globalYOffset, z: -2, duration: 1.5, ease: "sine.inOut" });
+      },
+      for: () => {
+        objects.box1.visible = true;
+        objects.sphere.visible = true;
+        objects.box1.position.set(6, globalYOffset, 0);
+        sphere.position.set(-6, globalYOffset, 0);
+
+        // Move purposefully towards it as a target/beneficiary, but STOP BEFORE reaching it (box face is at x=4)
+        currentTimeline = gsap.to(sphere.position, { x: 1, duration: 1.5, ease: "power2.out" });
+        gsap.to(sphere.scale, { x: 1.2, y: 1.2, z: 1.2, duration: 1.5, yoyo: true, repeat: 1 });
+      },
+      with: () => {
+        objects.sphere.visible = true;
+        objects.companionSphere.visible = true; // A friend!
+        sphere.position.set(-6, globalYOffset, 0);
+        objects.companionSphere.position.set(-7, globalYOffset, 2);
+
+        // Move together
+        currentTimeline = gsap.timeline();
+        currentTimeline.to(sphere.position, { x: 6, duration: 3, ease: "linear" }, 0)
+          .to(objects.companionSphere.position, { x: 5, duration: 3, ease: "linear" }, 0);
+      },
+      as: () => {
+        objects.sphere.visible = true;
+        objects.companionSphere.visible = true;
+        // Equal footing
+        sphere.position.set(-2, globalYOffset, 0);
+        objects.companionSphere.position.set(2, globalYOffset, 0);
+
+        // Match scaling
+        currentTimeline = gsap.timeline({ repeat: -1, yoyo: true });
+        currentTimeline.to(sphere.scale, { x: 1.5, y: 1.5, z: 1.5, duration: 1 }, 0)
+          .to(objects.companionSphere.scale, { x: 1.5, y: 1.5, z: 1.5, duration: 1 }, 0);
+      },
+      of: () => {
+        objects.box1.visible = true;
+        objects.sphere.visible = true;
+        objects.holeSphere.visible = true; // Use the cutout trick
+
+        objects.box1.position.set(0, globalYOffset, 0);
+        box1Mat.transparent = false; // Solidify box to make hole clearly visible
+
+        // Position hole slightly inside the right face to simulate an indentation / crater
+        const facePos = new THREE.Vector3(1.7, globalYOffset, 0);
+        objects.holeSphere.position.copy(facePos);
+
+        // Sphere starts exactly at the face, looking like part of it
+        sphere.position.set(2, globalYOffset, 0);
+
+        currentTimeline = gsap.timeline();
+        // Do NOT fly away. Slightly pull out and then seat back in to emphasize it is an inseparable piece.
+        currentTimeline.fromTo(sphere.position,
+          { x: 1.7, y: globalYOffset, z: 0 },
+          { x: 2.5, duration: 1.5, ease: "power1.inOut", yoyo: true, repeat: -1 })
+          .fromTo(sphere.scale,
+            { x: 0.8, y: 0.8, z: 0.8 },
+            { x: 1.0, y: 1.0, z: 1.0, duration: 1.5, ease: "power1.inOut", yoyo: true, repeat: -1 }, 0);
+      }
+    };
+
+    function updateUI(prep) {
+      document.getElementById('explanation-title').innerText = prepositions[prep].en || prep;
+      document.getElementById('explanation-text').innerText = prepositions[prep].ja;
+
+      document.querySelectorAll('.neon-btn').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.innerText === prep) {
+          btn.classList.add('active');
+          // simple auto-scroll active button into view within its container
+          btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+        }
+      });
+    }
+
+    window.playAnim = function (prep) {
+      updateUI(prep);
+
+      // Reset any scale
+      sphere.scale.set(1, 1, 1);
+      objects.companionSphere.scale.set(1, 1, 1);
+      objects.box1.scale.set(1, 1, 1);
+
+      // Remove connection lines if any leftover
+      resetScene();
+
+      if (animations[prep]) {
+        animations[prep]();
+      }
+    }
+
+    // Play default on load
+    setTimeout(() => { playAnim('in'); }, 1000);
+
+  </script>
+</body>
+
+</html>
