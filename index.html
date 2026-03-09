@@ -35,6 +35,23 @@
     .neon-text {
       text-shadow: 0 0 5px #fff, 0 0 10px #fff, 0 0 20px #0ff, 0 0 40px #0ff, 0 0 80px #0ff;
     }
+
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.3);
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: rgba(0, 255, 255, 0.5);
+      border-radius: 3px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: rgba(0, 255, 255, 0.8);
+    }
   </style>
 </head>
 
@@ -44,7 +61,7 @@
 
   <!-- UI Overlay -->
   <div
-    class="fixed bottom-0 left-0 w-full flex flex-col landscape:flex-row items-center pointer-events-none p-4 pb-6 landscape:p-2 landscape:pb-2 landscape:items-end z-10">
+    class="fixed bottom-0 left-0 w-full lg:w-[calc(100%-16rem)] flex flex-col landscape:flex-row items-center pointer-events-none p-4 pb-6 landscape:p-2 landscape:pb-2 landscape:items-end z-10 transition-all">
 
     <!-- Explanation Area -->
     <div
@@ -56,9 +73,9 @@
         全33個の前置詞の空間的なコアイメージを確認しましょう。<br />リストから選択してください。</p>
     </div>
 
-    <!-- Preposition Selector (Dropdown for Mobile/Desktop) -->
+    <!-- Preposition Selector (Dropdown for Mobile) -->
     <div
-      class="w-full max-w-sm landscape:max-w-[200px] pointer-events-auto bg-black/40 p-2 landscape:p-1 flex-shrink-0 rounded border border-cyan-900 overflow-hidden relative mt-2 landscape:mt-0 text-center shadow-[0_0_10px_rgba(0,255,255,0.2)] mx-auto landscape:mx-0">
+      class="w-full max-w-sm lg:hidden landscape:max-w-[200px] pointer-events-auto bg-black/40 p-2 landscape:p-1 flex-shrink-0 rounded border border-cyan-900 overflow-hidden relative mt-2 landscape:mt-0 text-center shadow-[0_0_10px_rgba(0,255,255,0.2)] mx-auto landscape:mx-0">
       <select id="preposition-select"
         class="w-full bg-transparent text-cyan-400 font-gaming font-bold text-xl landscape:text-base outline-none appearance-none text-center cursor-pointer p-2 landscape:p-1">
         <option value="" disabled selected>-- 前置詞を選択 --</option>
@@ -71,6 +88,17 @@
             d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
         </svg>
       </div>
+    </div>
+  </div>
+
+  <!-- PC Sidebar List (Desktop Only) -->
+  <div
+    class="hidden lg:flex fixed top-0 right-0 w-64 h-full bg-black/70 border-l border-cyan-900 backdrop-blur-md flex-col pointer-events-auto z-20 shadow-[-5px_0_15px_rgba(0,255,255,0.1)]">
+    <div class="p-4 border-b border-cyan-900/50">
+      <h2 class="text-xl font-gaming font-bold text-cyan-400 tracking-widest text-center">PREPOSITIONS</h2>
+    </div>
+    <div id="pc-preposition-list" class="flex-1 overflow-y-auto p-2 space-y-1 custom-scrollbar">
+      <!-- Buttons injected here by JS -->
     </div>
   </div>
 
@@ -345,12 +373,23 @@
     };
 
     const prepSelect = document.getElementById('preposition-select');
+    const pcPrepList = document.getElementById('pc-preposition-list');
+
     Object.keys(prepositions).forEach(prep => {
+      // Dropdown Option
       const opt = document.createElement('option');
       opt.value = prep;
       opt.innerText = prep;
       opt.className = 'bg-gray-900 text-cyan-400 font-sans'; // System font for dropdown options readability
       prepSelect.appendChild(opt);
+
+      // PC Sidebar Button
+      const btn = document.createElement('button');
+      btn.dataset.value = prep;
+      btn.innerText = prep;
+      btn.className = 'w-full text-left px-4 py-2 rounded font-gaming text-cyan-500 hover:bg-cyan-900/50 hover:text-cyan-300 transition-colors border border-transparent hover:border-cyan-800 focus:outline-none';
+      btn.onclick = () => playAnim(prep);
+      pcPrepList.appendChild(btn);
     });
 
     prepSelect.addEventListener('change', (e) => {
@@ -822,6 +861,20 @@
       if (prepSelect.value !== prep) {
         prepSelect.value = prep;
       }
+
+      // Sync PC Sidebar button highlight
+      const pcButtons = document.querySelectorAll('#pc-preposition-list button');
+      pcButtons.forEach(btn => {
+        if (btn.dataset.value === prep) {
+          btn.classList.add('bg-cyan-900/70', 'text-cyan-200', 'border-cyan-500');
+          btn.classList.remove('text-cyan-500', 'border-transparent');
+          // Scroll into view gently if needed
+          btn.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        } else {
+          btn.classList.remove('bg-cyan-900/70', 'text-cyan-200', 'border-cyan-500');
+          btn.classList.add('text-cyan-500', 'border-transparent');
+        }
+      });
     }
 
     window.playAnim = function (prep) {
