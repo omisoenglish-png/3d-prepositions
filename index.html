@@ -61,18 +61,23 @@
 
   <!-- UI Overlay -->
   <div
-    class="fixed bottom-0 left-0 w-full lg:w-[calc(100%-16rem)] flex flex-col landscape:flex-row items-center pointer-events-none p-4 pb-6 landscape:p-2 landscape:pb-2 landscape:items-end z-10 transition-all">
+    class="fixed bottom-0 left-0 w-full flex flex-col lg:flex-row items-center lg:items-end justify-center pointer-events-none p-4 pb-6 z-10 transition-all max-h-screen">
 
     <!-- Explanation Area -->
     <div
-      class="mb-4 landscape:mb-0 landscape:mr-4 p-4 landscape:p-2 rounded-xl bg-black/70 border border-cyan-500/50 backdrop-blur-md max-w-4xl landscape:max-w-2xl w-full text-center landscape:text-left pointer-events-auto transition-all shadow-[0_0_15px_rgba(0,255,255,0.2)]">
+      class="mb-2 landscape:mb-0 lg:mr-4 p-2 rounded-xl bg-black/70 border border-cyan-500/50 backdrop-blur-md max-w-4xl lg:w-1/4 text-center landscape:text-left pointer-events-auto transition-all shadow-[0_0_15px_rgba(0,255,255,0.2)]">
       <h2 id="explanation-title"
-        class="text-3xl landscape:text-xl font-gaming font-bold text-cyan-400 mb-2 landscape:mb-1 tracking-widest leading-none landscape:inline-block landscape:mr-3">
+        class="text-2xl landscape:text-xl font-gaming font-bold text-cyan-400 mb-1 lg:mb-2 tracking-widest leading-none">
         PREPOSITIONS</h2>
-      <p id="explanation-text" class="text-lg landscape:text-sm text-gray-200 landscape:inline-block">
+      <p id="explanation-text" class="text-sm text-gray-200">
         全33個の前置詞の空間的なコアイメージを確認しましょう。<br />リストから選択してください。</p>
     </div>
 
+    <!-- PC Preposition Grid (Desktop Only) -->
+    <div id="pc-preposition-grid"
+      class="hidden lg:flex flex-wrap gap-1.5 w-3/4 max-w-[1200px] justify-start content-start pointer-events-auto bg-black/50 p-3 rounded-xl border border-cyan-900/50 backdrop-blur shadow-[0_0_10px_rgba(0,255,255,0.1)]">
+      <!-- Buttons injected here by JS -->
+    </div>
     <!-- Preposition Selector (Dropdown for Mobile) -->
     <div
       class="w-full max-w-sm lg:hidden landscape:max-w-[200px] pointer-events-auto bg-black/40 p-2 landscape:p-1 flex-shrink-0 rounded border border-cyan-900 overflow-hidden relative mt-2 landscape:mt-0 text-center shadow-[0_0_10px_rgba(0,255,255,0.2)] mx-auto landscape:mx-0">
@@ -91,16 +96,7 @@
     </div>
   </div>
 
-  <!-- PC Sidebar List (Desktop Only) -->
-  <div
-    class="hidden lg:flex fixed top-0 right-0 w-64 h-full bg-black/70 border-l border-cyan-900 backdrop-blur-md flex-col pointer-events-auto z-20 shadow-[-5px_0_15px_rgba(0,255,255,0.1)]">
-    <div class="p-4 border-b border-cyan-900/50">
-      <h2 class="text-xl font-gaming font-bold text-cyan-400 tracking-widest text-center">PREPOSITIONS</h2>
-    </div>
-    <div id="pc-preposition-list" class="flex-1 overflow-y-auto p-2 space-y-1 custom-scrollbar">
-      <!-- Buttons injected here by JS -->
-    </div>
-  </div>
+  <!-- PC Sidebar List (Desktop Only) - REMOVED -->
 
   <script>
     // -------------------------
@@ -270,9 +266,9 @@
     objects.sphere = sphere;
 
     // 8. Companion Sphere (for 'with', 'as')
-    // Made unmistakably bright yellow-green
+    // Made unmistakably bright yellow-green as well to match
     const companionMat = new THREE.MeshStandardMaterial({
-      color: 0xffff00, emissive: 0xccff00, emissiveIntensity: 1.0, roughness: 0.2, metalness: 0.1
+      color: 0x9acd32, emissive: 0x9acd32, emissiveIntensity: 0.8, roughness: 0.2, metalness: 0.1
     });
     const companionSphere = new THREE.Mesh(sphereGeo, companionMat);
     scene.add(companionSphere);
@@ -373,7 +369,7 @@
     };
 
     const prepSelect = document.getElementById('preposition-select');
-    const pcPrepList = document.getElementById('pc-preposition-list');
+    const pcPrepGrid = document.getElementById('pc-preposition-grid');
 
     Object.keys(prepositions).forEach(prep => {
       // Dropdown Option
@@ -383,13 +379,13 @@
       opt.className = 'bg-gray-900 text-cyan-400 font-sans'; // System font for dropdown options readability
       prepSelect.appendChild(opt);
 
-      // PC Sidebar Button
+      // PC Grid Button (More compact to fit 33 items without scrolling)
       const btn = document.createElement('button');
       btn.dataset.value = prep;
       btn.innerText = prep;
-      btn.className = 'w-full text-left px-4 py-2 rounded font-gaming text-cyan-500 hover:bg-cyan-900/50 hover:text-cyan-300 transition-colors border border-transparent hover:border-cyan-800 focus:outline-none';
+      btn.className = 'px-2.5 py-1 rounded font-gaming text-xs lg:text-sm bg-black/60 border border-cyan-800 text-cyan-500 hover:bg-cyan-900/70 hover:text-cyan-200 hover:border-cyan-400 transition-all focus:outline-none shadow-[0_0_5px_rgba(0,255,255,0.1)] hover:shadow-[0_0_10px_rgba(0,255,255,0.4)] whitespace-nowrap flex-grow-0';
       btn.onclick = () => playAnim(prep);
-      pcPrepList.appendChild(btn);
+      pcPrepGrid.appendChild(btn);
     });
 
     prepSelect.addEventListener('change', (e) => {
@@ -862,17 +858,15 @@
         prepSelect.value = prep;
       }
 
-      // Sync PC Sidebar button highlight
-      const pcButtons = document.querySelectorAll('#pc-preposition-list button');
+      // Sync PC Grid button highlight
+      const pcButtons = document.querySelectorAll('#pc-preposition-grid button');
       pcButtons.forEach(btn => {
         if (btn.dataset.value === prep) {
-          btn.classList.add('bg-cyan-900/70', 'text-cyan-200', 'border-cyan-500');
-          btn.classList.remove('text-cyan-500', 'border-transparent');
-          // Scroll into view gently if needed
-          btn.scrollIntoView({ behavior: "smooth", block: "nearest" });
+          btn.classList.add('bg-cyan-600/50', 'text-white', 'border-cyan-300', 'shadow-[0_0_15px_rgba(0,255,255,0.6)]');
+          btn.classList.remove('bg-black/50', 'text-cyan-500', 'border-cyan-800', 'shadow-[0_0_5px_rgba(0,255,255,0.1)]');
         } else {
-          btn.classList.remove('bg-cyan-900/70', 'text-cyan-200', 'border-cyan-500');
-          btn.classList.add('text-cyan-500', 'border-transparent');
+          btn.classList.remove('bg-cyan-600/50', 'text-white', 'border-cyan-300', 'shadow-[0_0_15px_rgba(0,255,255,0.6)]');
+          btn.classList.add('bg-black/50', 'text-cyan-500', 'border-cyan-800', 'shadow-[0_0_5px_rgba(0,255,255,0.1)]');
         }
       });
     }
