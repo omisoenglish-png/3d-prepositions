@@ -2,895 +2,1033 @@
 <html lang="ja">
 
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>3D Preposition Explorer (33 Words)</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-  <link
-    href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@400;700&display=swap"
-    rel="stylesheet">
-  <style>
-    body {
-      margin: 0;
-      overflow: hidden;
-      background-color: #050510;
-      font-family: 'Noto Sans JP', sans-serif;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>英単語マスター！</title>
+    <!-- Font Awesome (Optional, for icons if needed) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #FF6B6B;
+            --secondary: #4ECDC4;
+            --accent: #FFE66D;
+            --text: #2D3436;
+            --bg: #F7F1E3;
+            --card-bg: #FFFFFF;
+        }
 
-    .font-gaming {
-      font-family: 'Orbitron', 'Noto Sans JP', sans-serif;
-    }
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
 
-    #canvas-container {
-      width: 100vw;
-      height: 100vh;
-      position: absolute;
-      top: 0;
-      left: 0;
-      z-index: -1;
-    }
+        body {
+            font-family: 'Hiragino Maru Gothic ProN', 'Rounded M+ 1c', 'Meiryo', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
 
-    .neon-text {
-      text-shadow: 0 0 5px #fff, 0 0 10px #fff, 0 0 20px #0ff, 0 0 40px #0ff, 0 0 80px #0ff;
-    }
+        .app-container {
+            width: 100%;
+            max-width: 500px;
+            background: var(--card-bg);
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            /* Mobile full height */
+            position: relative;
+        }
 
-    .custom-scrollbar::-webkit-scrollbar {
-      width: 6px;
-    }
+        @media (min-width: 501px) {
+            .app-container {
+                min-height: 700px;
+                margin: 20px;
+                height: 90vh;
+            }
+        }
 
-    .custom-scrollbar::-webkit-scrollbar-track {
-      background: rgba(0, 0, 0, 0.3);
-    }
+        .screen {
+            display: none;
+            flex: 1;
+            flex-direction: column;
+            padding: 30px 20px;
+            text-align: center;
+            /* overflow-y: auto; Removed to prevent full page scroll */
+        }
 
-    .custom-scrollbar::-webkit-scrollbar-thumb {
-      background: rgba(0, 255, 255, 0.5);
-      border-radius: 3px;
-    }
+        .screen.active {
+            display: flex;
+        }
 
-    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-      background: rgba(0, 255, 255, 0.8);
-    }
-  </style>
+        .title-area {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            margin: auto 0;
+            /* Centered in scrollable area */
+            min-height: min-content;
+        }
+
+        /* --- Start Screen --- */
+        h1 {
+            color: var(--primary);
+            font-size: 2.8rem;
+            margin-bottom: 5px;
+            /* Reduced from 15px */
+            line-height: 1.2;
+            text-shadow: 2px 2px 0px rgba(255, 107, 107, 0.2);
+        }
+
+        .start-desc {
+            font-size: 1.1rem;
+            color: #666;
+            margin-bottom: 20px;
+            /* Reduced from 40px */
+            line-height: 1.6;
+        }
+
+        /* --- Common UI --- */
+        .btn {
+            background-color: var(--secondary);
+            color: white;
+            border: none;
+            padding: 18px 40px;
+            font-size: 1.3rem;
+            font-weight: bold;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 6px 15px rgba(78, 205, 196, 0.3);
+            width: 100%;
+            max-width: 300px;
+            margin: 0 auto;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(78, 205, 196, 0.5);
+            background-color: #45b8b0;
+        }
+
+        .btn:active {
+            transform: translateY(1px);
+            box-shadow: 0 2px 10px rgba(78, 205, 196, 0.3);
+        }
+
+        .header-area {
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .header-left {
+            flex: 1;
+        }
+
+        .hint-btn {
+            background-color: #f1c40f;
+            color: white;
+            border: none;
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            font-size: 1.2rem;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(241, 196, 15, 0.3);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: all 0.2s;
+            margin-left: 15px;
+        }
+
+        .hint-btn:hover {
+            transform: scale(1.1);
+            background-color: #f39c12;
+        }
+
+        .hint-btn:active {
+            transform: scale(0.95);
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 12px;
+            background-color: #eee;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            overflow: hidden;
+            border: 2px solid white;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .progress-fill {
+            height: 100%;
+            background-color: var(--accent);
+            width: 0%;
+            transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .question-number {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #888;
+        }
+
+        .question-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .question-sub {
+            font-size: 1rem;
+            color: #666;
+            margin-bottom: 15px;
+            font-weight: bold;
+            background: #f8f9fa;
+            padding: 5px 15px;
+            border-radius: 20px;
+            display: inline-block;
+            align-self: center;
+        }
+
+        .question-text {
+            font-size: clamp(1.5rem, 6vw, 2.5rem);
+            /* Responsive sizing so long texts shrink on mobile */
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: var(--text);
+            word-wrap: break-word;
+            /* Ensure it wraps */
+            white-space: normal;
+            line-height: 1.4;
+            padding: 0 10px;
+        }
+
+        /* Input Area (Typing) */
+        .input-area {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            /* Reduced gap slightly to fit the new button */
+        }
+
+        input[type="text"] {
+            padding: 18px;
+            font-size: 1.8rem;
+            border: 3px solid #e1e1e1;
+            border-radius: 15px;
+            text-align: center;
+            outline: none;
+            transition: all 0.3s;
+            box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.05);
+            font-family: 'Arial', sans-serif;
+        }
+
+        input[type="text"]:focus {
+            border-color: var(--secondary);
+            box-shadow: 0 0 0 4px rgba(78, 205, 196, 0.2);
+        }
+
+        /* Choices Area (Multiple Choice) */
+        .choices-area {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+        }
+
+        .choice-btn {
+            padding: 18px 15px;
+            font-size: 1.2rem;
+            border: 2px solid #eee;
+            background: white;
+            color: var(--text);
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: bold;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.02);
+            text-align: center;
+        }
+
+        .choice-btn:hover,
+        .choice-btn:active {
+            border-color: var(--secondary);
+            background: #f0fbfb;
+            color: var(--secondary);
+            transform: translateY(-2px);
+        }
+
+        /* --- Feedback Overlay --- */
+        .feedback {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.95);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+            padding: 20px;
+        }
+
+        .feedback.show {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .feedback-icon {
+            font-size: 8rem;
+            margin-bottom: 15px;
+            animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes popIn {
+            0% {
+                transform: scale(0);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        .feedback-text {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .feedback-correct-answer {
+            font-size: 1.3rem;
+            color: #666;
+            margin-bottom: 30px;
+            min-height: 40px;
+            font-weight: bold;
+        }
+
+        .color-correct {
+            color: #2ecc71;
+        }
+
+        .color-wrong {
+            color: #e74c3c;
+        }
+
+        /* --- Result Screen --- */
+        .result-header {
+            margin-bottom: 15px;
+        }
+
+        .score-circle {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            background: #fff;
+            border: 8px solid var(--accent);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            margin: 0 auto 20px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
+        }
+
+        .score-val {
+            font-size: 3.5rem;
+            color: var(--primary);
+            font-weight: bold;
+            line-height: 1;
+        }
+
+        .score-max {
+            font-size: 1.2rem;
+            color: #888;
+            font-weight: bold;
+        }
+
+        .result-message {
+            font-weight: bold;
+            font-size: 1.3rem;
+            margin-bottom: 25px;
+        }
+
+        .mistakes-container {
+            text-align: left;
+            margin-top: 30px;
+            border-top: 2px dashed #eee;
+            padding-top: 25px;
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .mistakes-title {
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 15px;
+            color: #666;
+            font-size: 1.1rem;
+        }
+
+        .mistake-item {
+            background: #fff9f9;
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            border-left: 5px solid var(--primary);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.02);
+            position: relative;
+        }
+
+        .mistake-jp {
+            font-size: 1rem;
+            color: #888;
+            margin-bottom: 5px;
+        }
+
+        .mistake-en {
+            font-weight: bold;
+            font-size: 1.3rem;
+            color: var(--text);
+            margin-bottom: 5px;
+        }
+
+        .mistake-user {
+            font-size: 0.95rem;
+            color: var(--primary);
+            background: #ffebeb;
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 5px;
+        }
+
+        .mistake-badge {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            font-size: 1.5rem;
+            color: #eee;
+        }
+    </style>
 </head>
 
-<body class="text-white">
+<body>
 
-  <div id="canvas-container"></div>
+    <div class="app-container">
+        <!-- 1. Start Screen -->
+        <div id="start-screen" class="screen active">
+            <div class="title-area">
+                <div><i class="fa-solid fa-graduation-cap"
+                        style="font-size: 4rem; color: var(--accent); margin-bottom: 20px;"></i></div>
+                <h1>英単語<br>マスター！</h1>
+                <p class="start-desc">小テストに挑戦！<br>タイピングと選択問題があるよ。<br>めざせ満点💯</p>
 
-  <!-- UI Overlay -->
-  <div
-    class="fixed bottom-0 left-0 w-full flex flex-col lg:flex-row items-center lg:items-end justify-center pointer-events-none p-4 pb-6 z-10 transition-all max-h-screen">
+                <div class="settings-area"
+                    style="background:#f9f9f9; padding:15px; border-radius:10px; margin-bottom: 20px; text-align: left; width: 100%; max-width: 350px;">
+                    <div style="margin-bottom: 15px;">
+                        <label style="font-weight: bold; color: #666; display: block; margin-bottom: 5px;">出題数：</label>
+                        <select id="question-count"
+                            style="width: 100%; padding: 8px; border-radius: 5px; border: 1px solid #ddd;">
+                            <option value="10">10問</option>
+                            <option value="20">20問</option>
+                            <option value="30">30問</option>
+                            <option value="all" selected>選んだ範囲すべて</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label
+                            style="font-weight: bold; color: #666; display: flex; align-items: flex-start; gap: 8px; cursor: pointer;">
+                            <input type="checkbox" id="allow-alt-answers"
+                                style="width: 18px; height: 18px; accent-color: var(--primary); margin-top: 3px;">
+                            <div>
+                                正解の別解を認める<br>
+                                <span style="font-size: 0.85em; font-weight: normal; color: #888;">（例: sunny →
+                                    fine）</span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
 
-    <!-- Explanation Area -->
-    <div
-      class="mb-2 landscape:mb-0 lg:mr-4 p-2 rounded-xl bg-black/70 border border-cyan-500/50 backdrop-blur-md max-w-4xl lg:w-1/4 text-center landscape:text-left pointer-events-auto transition-all shadow-[0_0_15px_rgba(0,255,255,0.2)]">
-      <h2 id="explanation-title"
-        class="text-2xl landscape:text-xl font-gaming font-bold text-cyan-400 mb-1 lg:mb-2 tracking-widest leading-none">
-        PREPOSITIONS</h2>
-      <p id="explanation-text" class="text-sm text-gray-200">
-        全33個の前置詞の空間的なコアイメージを確認しましょう。<br />リストから選択してください。</p>
+                <div class="category-select-wrapper"
+                    style="margin-bottom: 20px; width: 100%; max-width: 350px; position: relative;">
+                    <details
+                        style="background: #fff; border: 2px solid #e1e1e1; border-radius: 15px; text-align: left; transition: all 0.3s; box-shadow: 0 4px 6px rgba(0,0,0,0.02);">
+                        <summary
+                            style="font-weight: bold; color: var(--text); cursor: pointer; outline: none; font-size: 1.05rem; padding: 15px; list-style: none; display: flex; justify-content: space-between; align-items: center;">
+                            テストの出題範囲（タップして選択）<span>▼</span>
+                        </summary>
+                        <!-- 展開時に絶対配置で浮かせることで画面が伸びるのを防ぐ -->
+                        <div
+                            style="position: absolute; top: 100%; left: 0; right: 0; background: white; z-index: 10; border: 2px solid #e1e1e1; border-top: none; border-radius: 0 0 15px 15px; box-shadow: 0 10px 15px rgba(0,0,0,0.1); padding: 0 15px 15px;">
+                            <div id="category-checkboxes"
+                                style="display: flex; flex-direction: column; gap: 8px; max-height: 180px; overflow-y: auto; padding-right: 5px;">
+                                <!-- Checkboxes will be injected here -->
+                            </div>
+                        </div>
+                    </details>
+                </div>
+
+                <button class="btn" onclick="startTest()">テストをはじめる <i class="fa-solid fa-chevron-right"
+                        style="margin-left: 5px;"></i></button>
+            </div>
+        </div>
+
+        <!-- 2. Question Screen -->
+        <div id="question-screen" class="screen">
+            <div class="header-area">
+                <div class="header-left">
+                    <div class="progress-bar">
+                        <div id="progress-fill" class="progress-fill"></div>
+                    </div>
+                    <div class="question-number">第 <span id="q-num">1</span> 問 / <span id="q-total"></span></div>
+                </div>
+                <!-- ヒントボタンを追加 -->
+                <button class="hint-btn" onclick="playHint()" title="発音をきく">
+                    <i class="fa-solid fa-volume-high"></i>
+                </button>
+            </div>
+
+            <div class="question-content">
+                <div id="q-sub" class="question-sub">この日本語、英語で書ける？</div>
+                <div id="q-text" class="question-text">白</div>
+
+                <!-- Typing Component -->
+                <div id="typing-area" class="input-area">
+                    <input type="text" id="answer-input" placeholder="ここに入力..." autocomplete="off"
+                        autocapitalize="none">
+                    <button class="btn" onclick="checkTypingAnswer()">けってい</button>
+                    <!-- わからないボタンの追加 -->
+                    <button class="btn" onclick="giveUp()"
+                        style="background-color: #e0e0e0; color: #555; padding: 12px 20px; font-size: 1.1rem; box-shadow: none; margin-top: 5px;">わからない</button>
+                </div>
+
+                <!-- Multiple Choice Component -->
+                <div id="choices-area" class="choices-area">
+                    <!-- choices injected via JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. Feedback Overlay -->
+        <div id="feedback-overlay" class="feedback">
+            <div id="feedback-icon" class="feedback-icon">⭕</div>
+            <div id="feedback-text" class="feedback-text color-correct">大正解！</div>
+            <div id="feedback-correct-answer" class="feedback-correct-answer"></div>
+            <button class="btn" id="next-btn" onclick="nextQuestion()">次の問題へ</button>
+        </div>
+
+        <!-- 4. Result Screen -->
+        <div id="result-screen" class="screen">
+            <div class="result-header">
+                <h2>テスト結果</h2>
+            </div>
+
+            <div class="score-circle">
+                <div class="score-val" id="score-val">0</div>
+                <div class="score-max" id="score-max">/ 0点</div>
+            </div>
+
+            <div id="result-message" class="result-message"></div>
+
+            <button class="btn" onclick="location.reload()"><i class="fa-solid fa-rotate-right"></i> もう1回チャレンジ</button>
+
+            <div id="mistakes-container" class="mistakes-container" style="display:none;">
+                <div class="mistakes-title">【復習】まちがえた問題</div>
+                <div id="mistakes-list"></div>
+            </div>
+        </div>
     </div>
 
-    <!-- PC Preposition Grid (Desktop Only) -->
-    <div id="pc-preposition-grid"
-      class="hidden lg:flex flex-wrap gap-1.5 w-3/4 max-w-[1200px] justify-start content-start pointer-events-auto bg-black/50 p-3 rounded-xl border border-cyan-900/50 backdrop-blur shadow-[0_0_10px_rgba(0,255,255,0.1)]">
-      <!-- Buttons injected here by JS -->
-    </div>
-    <!-- Preposition Selector (Dropdown for Mobile) -->
-    <div
-      class="w-full max-w-sm lg:hidden landscape:max-w-[200px] pointer-events-auto bg-black/40 p-2 landscape:p-1 flex-shrink-0 rounded border border-cyan-900 overflow-hidden relative mt-2 landscape:mt-0 text-center shadow-[0_0_10px_rgba(0,255,255,0.2)] mx-auto landscape:mx-0">
-      <select id="preposition-select"
-        class="w-full bg-transparent text-cyan-400 font-gaming font-bold text-xl landscape:text-base outline-none appearance-none text-center cursor-pointer p-2 landscape:p-1">
-        <option value="" disabled selected>-- 前置詞を選択 --</option>
-        <!-- Options injected here by JS -->
-      </select>
-      <!-- Custom dropdown arrow -->
-      <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-cyan-400">
-        <svg class="fill-current h-6 w-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-          <path
-            d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
-        </svg>
-      </div>
-    </div>
-  </div>
+    <script>
+        // 問題データ
+        const questions = [
+            // 日本語 ➡ 英語（タイピング）
+            { jp: "1", en: "one", hint: "数字", type: "typing" },
+            { jp: "2", en: "two", hint: "数字", type: "typing" },
+            { jp: "3", en: "three", hint: "数字", type: "typing" },
+            { jp: "4", en: "four", hint: "数字", type: "typing" },
+            { jp: "5", en: "five", hint: "数字", type: "typing" },
+            { jp: "6", en: "six", hint: "数字", type: "typing" },
+            { jp: "7", en: "seven", hint: "数字", type: "typing" },
+            { jp: "8", en: "eight", hint: "数字", type: "typing" },
+            { jp: "9", en: "nine", hint: "数字", type: "typing" },
+            { jp: "10", en: "ten", hint: "数字", type: "typing" },
+            { jp: "11", en: "eleven", hint: "数字", type: "typing" },
+            { jp: "12", en: "twelve", hint: "数字", type: "typing" },
+            { jp: "13", en: "thirteen", hint: "数字", type: "typing" },
+            { jp: "14", en: "fourteen", hint: "数字", type: "typing" },
+            { jp: "15", en: "fifteen", hint: "数字", type: "typing" },
+            { jp: "16", en: "sixteen", hint: "数字", type: "typing" },
+            { jp: "17", en: "seventeen", hint: "数字", type: "typing" },
+            { jp: "18", en: "eighteen", hint: "数字", type: "typing" },
+            { jp: "19", en: "nineteen", hint: "数字", type: "typing" },
+            { jp: "20", en: "twenty", hint: "数字", type: "typing" },
+            { jp: "30", en: "thirty", hint: "数字", type: "typing" },
+            { jp: "40", en: "forty", hint: "数字", type: "typing" },
+            { jp: "50", en: "fifty", hint: "数字", type: "typing" },
+            { jp: "60", en: "sixty", hint: "数字", type: "typing" },
+            { jp: "70", en: "seventy", hint: "数字", type: "typing" },
+            { jp: "80", en: "eighty", hint: "数字", type: "typing" },
+            { jp: "90", en: "ninety", hint: "数字", type: "typing" },
+            { jp: "100", en: "one hundred", hint: "数字", type: "typing" },
+            { jp: "0", en: "zero", hint: "数字", type: "typing" },
+            { jp: "白", en: "white", hint: "色", type: "typing" },
+            { jp: "赤", en: "red", hint: "色", type: "typing" },
+            { jp: "オレンジ", en: "orange", hint: "色", type: "typing" },
+            { jp: "黄", en: "yellow", hint: "色", type: "typing" },
+            { jp: "緑", en: "green", hint: "色", type: "typing" },
+            { jp: "ピンク", en: "pink", hint: "色", type: "typing" },
+            { jp: "むらさき", en: "purple", hint: "色", type: "typing" },
+            { jp: "青", en: "blue", hint: "色", type: "typing" },
+            { jp: "茶", en: "brown", hint: "色", type: "typing" },
+            { jp: "黒", en: "black", hint: "色", type: "typing" },
+            { jp: "1月", en: "January", hint: "月[months]", type: "typing" },
+            { jp: "2月", en: "February", hint: "月[months]", type: "typing" },
+            { jp: "3月", en: "March", hint: "月[months]", type: "typing" },
+            { jp: "4月", en: "April", hint: "月[months]", type: "typing" },
+            { jp: "5月", en: "May", hint: "月[months]", type: "typing" },
+            { jp: "6月", en: "June", hint: "月[months]", type: "typing" },
+            { jp: "7月", en: "July", hint: "月[months]", type: "typing" },
+            { jp: "8月", en: "August", hint: "月[months]", type: "typing" },
+            { jp: "9月", en: "September", hint: "月[months]", type: "typing" },
+            { jp: "10月", en: "October", hint: "月[months]", type: "typing" },
+            { jp: "11月", en: "November", hint: "月[months]", type: "typing" },
+            { jp: "12月", en: "December", hint: "月[months]", type: "typing" },
+            { jp: "春", en: "spring", hint: "季節[seasons]", type: "typing" },
+            { jp: "夏", en: "summer", hint: "季節[seasons]", type: "typing" },
+            { jp: "秋", en: "fall", alt: ["autumn"], hint: "季節[seasons]", type: "typing" },
+            { jp: "冬", en: "winter", hint: "季節[seasons]", type: "typing" },
+            { jp: "誕生日", en: "birthday", hint: "行事[events]", type: "typing" },
+            { jp: "元日", en: "New Year's Day", alt: ["New Year's day", "new year's day", "New Years Day", "new years day"], hint: "行事[events]", type: "typing" },
+            { jp: "ひな祭り", en: "Dolls' Festival", alt: ["Dolls' festival", "dolls' festival", "dolls festival"], hint: "行事[events]", type: "typing" },
+            { jp: "こどもの日", en: "Children's Day", alt: ["Children's day", "children's day", "childrens day"], hint: "行事[events]", type: "typing" },
+            { jp: "七夕祭り", en: "Star Festival", alt: ["Star festival", "star festival"], hint: "行事[events]", type: "typing" },
+            { jp: "花火大会", en: "fireworks festival", hint: "行事[events]", type: "typing" },
+            { jp: "ハロウィーン", en: "Halloween", alt: ["halloween"], hint: "行事[events]", type: "typing" },
+            { jp: "クリスマス", en: "Christmas", alt: ["christmas"], hint: "行事[events]", type: "typing" },
+            { jp: "大晦日", en: "New Year's Eve", alt: ["New Year's eve", "new year's eve", "new years eve"], hint: "行事[events]", type: "typing" },
+            { jp: "日曜日", en: "Sunday", hint: "曜日[days of the week]", type: "typing" },
+            { jp: "月曜日", en: "Monday", hint: "曜日[days of the week]", type: "typing" },
+            { jp: "火曜日", en: "Tuesday", hint: "曜日[days of the week]", type: "typing" },
+            { jp: "水曜日", en: "Wednesday", hint: "曜日[days of the week]", type: "typing" },
+            { jp: "木曜日", en: "Thursday", hint: "曜日[days of the week]", type: "typing" },
+            { jp: "金曜日", en: "Friday", hint: "曜日[days of the week]", type: "typing" },
+            { jp: "土曜日", en: "Saturday", hint: "曜日[days of the week]", type: "typing" },
+            { jp: "1日、1番目", en: "first", hint: "日付[dates]", type: "typing" },
+            { jp: "2日、2番目", en: "second", hint: "日付[dates]", type: "typing" },
+            { jp: "3日、3番目", en: "third", hint: "日付[dates]", type: "typing" },
+            { jp: "4日、4番目", en: "fourth", hint: "日付[dates]", type: "typing" },
+            { jp: "5日、5番目", en: "fifth", hint: "日付[dates]", type: "typing" },
+            { jp: "6日、6番目", en: "sixth", hint: "日付[dates]", type: "typing" },
+            { jp: "7日、7番目", en: "seventh", hint: "日付[dates]", type: "typing" },
+            { jp: "8日、8番目", en: "eighth", hint: "日付[dates]", type: "typing" },
+            { jp: "9日、9番目", en: "ninth", hint: "日付[dates]", type: "typing" },
+            { jp: "10日、10番目", en: "tenth", hint: "日付[dates]", type: "typing" },
+            { jp: "11日、11番目", en: "eleventh", hint: "日付[dates]", type: "typing" },
+            { jp: "12日、12番目", en: "twelfth", hint: "日付[dates]", type: "typing" },
+            { jp: "13日、13番目", en: "thirteenth", hint: "日付[dates]", type: "typing" },
+            { jp: "14日、14番目", en: "fourteenth", hint: "日付[dates]", type: "typing" },
+            { jp: "15日、15番目", en: "fifteenth", hint: "日付[dates]", type: "typing" },
+            { jp: "16日、16番目", en: "sixteenth", hint: "日付[dates]", type: "typing" },
+            { jp: "17日、17番目", en: "seventeenth", hint: "日付[dates]", type: "typing" },
+            { jp: "18日、18番目", en: "eighteenth", hint: "日付[dates]", type: "typing" },
+            { jp: "19日、19番目", en: "nineteenth", hint: "日付[dates]", type: "typing" },
+            { jp: "20日、20番目", en: "twentieth", hint: "日付[dates]", type: "typing" },
+            { jp: "21日、21番目", en: "twenty-first", alt: ["twenty first"], hint: "日付[dates]", type: "typing" },
+            { jp: "22日、22番目", en: "twenty-second", alt: ["twenty second"], hint: "日付[dates]", type: "typing" },
+            { jp: "23日、23番目", en: "twenty-third", alt: ["twenty third"], hint: "日付[dates]", type: "typing" },
+            { jp: "24日、24番目", en: "twenty-fourth", alt: ["twenty fourth"], hint: "日付[dates]", type: "typing" },
+            { jp: "25日、25番目", en: "twenty-fifth", alt: ["twenty fifth"], hint: "日付[dates]", type: "typing" },
+            { jp: "26日、26番目", en: "twenty-sixth", alt: ["twenty sixth"], hint: "日付[dates]", type: "typing" },
+            { jp: "27日、27番目", en: "twenty-seventh", alt: ["twenty seventh"], hint: "日付[dates]", type: "typing" },
+            { jp: "28日、28番目", en: "twenty-eighth", alt: ["twenty eighth"], hint: "日付[dates]", type: "typing" },
+            { jp: "29日、29番目", en: "twenty-ninth", alt: ["twenty ninth"], hint: "日付[dates]", type: "typing" },
+            { jp: "30日、30番目", en: "thirtieth", hint: "日付[dates]", type: "typing" },
+            { jp: "31日、31番目", en: "thirty-first", alt: ["thirty first"], hint: "日付[dates]", type: "typing" },
+            { jp: "立ち上がりなさい。", en: "Stand up.", alt: ["stand up"], hint: "教室で使う英語", type: "typing" },
+            { jp: "すわりなさい。", en: "Sit down.", alt: ["sit down"], hint: "教室で使う英語", type: "typing" },
+            { jp: "手を上げなさい。", en: "Raise your hand.", alt: ["raise your hand"], hint: "教室で使う英語", type: "typing" },
+            { jp: "本の４ページを開きなさい。", en: "Open your book to page four.", alt: ["open your book to page four", "Open your book to page 4.", "open your book to page 4"], hint: "教室で使う英語", type: "typing" },
+            { jp: "本を閉じなさい。", en: "Close your book.", alt: ["close your book"], hint: "教室で使う英語", type: "typing" },
+            { jp: "４人のグループを作りなさい。", en: "Make groups of four.", alt: ["make groups of four", "Make groups of 4.", "make groups of 4"], hint: "教室で使う英語", type: "typing" },
+            { jp: "ペアを作りなさい。", en: "Make pairs.", alt: ["make pairs"], hint: "教室で使う英語", type: "typing" },
+            { jp: "私の後に繰り返して言いなさい。", en: "Repeat after me.", alt: ["repeat after me"], hint: "教室で使う英語", type: "typing" },
+            { jp: "静かにしてください。", en: "Be quiet, please.", alt: ["be quiet, please", "Be quiet please", "be quiet please"], hint: "教室で使う英語", type: "typing" },
+            { jp: "何とおっしゃいましたか。", en: "Pardon me?", alt: ["pardon me", "Pardon me"], hint: "教室で使う英語", type: "typing" },
+            { jp: "すみません。失礼ですが。", en: "Excuse me.", alt: ["excuse me", "Excuse me"], hint: "教室で使う英語", type: "typing" },
+            { jp: "辞書は英語でどのように言いますか。", en: "How do you say jisho in English?", alt: ["how do you say jisho in english", "How do you say jisho in English"], hint: "教室で使う英語", type: "typing" },
 
-  <!-- PC Sidebar List (Desktop Only) - REMOVED -->
+            // 以下は英語 ➡ 日本語（4択）のサンプルデータ（追加分）
+            { en: "square", jp: "正方形", hint: "形", choices: ["円、丸", "三角形", "正方形", "長方形"], type: "choice" },
+            { en: "triangle", jp: "三角形", hint: "形", choices: ["円、丸", "三角形", "正方形", "長方形"], type: "choice" },
+            { en: "circle", jp: "円、丸", hint: "形", choices: ["円、丸", "三角形", "正方形", "長方形"], type: "choice" },
 
-  <script>
-    // -------------------------
-    // Set up Three.js Scene
-    // -------------------------
-    const container = document.getElementById('canvas-container');
-    const scene = new THREE.Scene();
-    scene.fog = new THREE.FogExp2(0x050510, 0.02);
+            { en: "happy", jp: "幸せな", hint: "気分", choices: ["悲しい", "幸せな", "怒った", "疲れた"], type: "choice" },
+            { en: "thirsty", jp: "のどがかわいた", hint: "気分", choices: ["空腹な", "疲れた", "眠い", "のどがかわいた"], type: "choice" },
+            { en: "sleepy", jp: "眠い", hint: "気分", choices: ["幸せな", "忙しい", "眠い", "のどがかわいた"], type: "choice" },
 
-    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
-    // Move camera further back and slightly higher so objects appear higher on screen, avoiding the bottom UI
-    camera.position.set(10, 8, 18);
-    // Look slightly above the center
-    camera.lookAt(0, 2, 0);
+            { en: "sunny", jp: "晴れた", hint: "天気", choices: ["曇りの", "雨の", "晴れた", "雪の"], type: "choice" },
+            { en: "humid", jp: "湿気のある", hint: "天気", choices: ["暑い", "寒い", "湿気のある", "あたたかい"], type: "choice" },
+            { en: "cold", jp: "寒い", hint: "天気", choices: ["暑い", "寒い", "湿気のある", "あたたかい"], type: "choice" }
+        ];
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(window.devicePixelRatio);
-    container.appendChild(renderer.domElement);
+        // 動的にカテゴリを生成してチェックボックスを追加
+        window.addEventListener('DOMContentLoaded', () => {
+            const container = document.getElementById('category-checkboxes');
 
-    // Lights
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
-    scene.add(ambientLight);
+            const categories = new Set();
+            questions.forEach(q => {
+                if (q.hint) categories.add(q.hint);
+            });
 
-    const pointLight = new THREE.PointLight(0x00ffff, 1, 50);
-    pointLight.position.set(5, 10, 5);
-    scene.add(pointLight);
+            // 「すべて選択」チェックボックスを先頭に追加（デフォルトでチェック状態）
+            const allLabel = document.createElement('label');
+            allLabel.style.cssText = "display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 8px 12px; border-radius: 10px; background: #f0fbfb; font-weight: bold; border: 1px solid var(--secondary);";
+            allLabel.innerHTML = `<input type="checkbox" id="check-all" value="all" checked onchange="toggleAllCategories(this)" style="width:18px; height:18px; accent-color: var(--secondary);">すべての範囲`;
+            container.appendChild(allLabel);
 
-    const pointLight2 = new THREE.PointLight(0xff00ff, 1, 50);
-    pointLight2.position.set(-5, -5, -5);
-    scene.add(pointLight2);
+            // 個別のカテゴリチェックボックスを追加
+            categories.forEach(cat => {
+                const label = document.createElement('label');
+                label.style.cssText = "display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 8px 12px; border-radius: 10px; border: 1px solid #eee; background: #fff;";
+                label.innerHTML = `<input type="checkbox" class="cat-check" value="${cat}" checked onchange="updateAllCheckState()" style="width:16px; height:16px; accent-color: var(--primary);">${cat}`;
+                container.appendChild(label);
+            });
+        });
 
-    // Stars Background
-    const starsGeo = new THREE.BufferGeometry();
-    const starsPts = 1000;
-    const posArray = new Float32Array(starsPts * 3);
-    for (let i = 0; i < starsPts * 3; i++) {
-      posArray[i] = (Math.random() - 0.5) * 100;
-    }
-    starsGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
-
-    // Create a circular gradient texture for stars to avoid square look
-    const canvas = document.createElement('canvas');
-    canvas.width = 16;
-    canvas.height = 16;
-    const ctx = canvas.getContext('2d');
-    const grad = ctx.createRadialGradient(8, 8, 0, 8, 8, 8);
-    grad.addColorStop(0, 'rgba(255, 255, 255, 1)');
-    grad.addColorStop(0.2, 'rgba(255, 255, 255, 0.8)');
-    grad.addColorStop(0.5, 'rgba(0, 255, 255, 0.4)');
-    grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, 16, 16);
-    const starTex = new THREE.CanvasTexture(canvas);
-
-    const starsMat = new THREE.PointsMaterial({
-      size: 0.5,
-      color: 0xffffff,
-      transparent: true,
-      opacity: 0.8,
-      map: starTex,
-      blending: THREE.AdditiveBlending,
-      depthWrite: false
-    });
-    const stars = new THREE.Points(starsGeo, starsMat);
-    scene.add(stars);
-
-    // Global Offset to keep everything above the UI
-    const globalYOffset = 0;
-
-    // Materials
-    const boxMatTemplate = {
-      color: 0x001133, emissive: 0x004488, emissiveIntensity: 0.5,
-      transparent: true, opacity: 0.8, roughness: 0.1, metalness: 0.8
-    };
-    const edgesMat = new THREE.LineBasicMaterial({ color: 0x00ffff, linewidth: 2 });
-
-    const sphereMatTemplate = {
-      color: 0x330033, emissive: 0xff00ff, emissiveIntensity: 0.8,
-      roughness: 0.2, metalness: 0.8
-    };
-
-    // -------------------------
-    // Objects Setup
-    // -------------------------
-    const objects = {}; // store scene objects to toggle visibility
-
-    // 1. Box 1 (Main Reference)
-    const boxSize = 4;
-    const boxGeo = new THREE.BoxGeometry(boxSize, boxSize, boxSize);
-    const box1Mat = new THREE.MeshStandardMaterial({ ...boxMatTemplate });
-    const box1 = new THREE.Mesh(boxGeo, box1Mat);
-    box1.add(new THREE.LineSegments(new THREE.EdgesGeometry(boxGeo), edgesMat));
-    scene.add(box1);
-    objects.box1 = box1;
-
-    // 2. Box 2 (For 'between')
-    const box2Mat = new THREE.MeshStandardMaterial({ ...boxMatTemplate });
-    const box2 = new THREE.Mesh(boxGeo, box2Mat);
-    box2.add(new THREE.LineSegments(new THREE.EdgesGeometry(boxGeo), edgesMat));
-    box2.position.set(8, globalYOffset, 0); // Positioned to the right
-    scene.add(box2);
-    objects.box2 = box2;
-
-    // 3. BoxGroup (For 'among' - many smaller boxes around)
-    const boxGroup = new THREE.Group();
-    const smallBoxGeo = new THREE.BoxGeometry(2, 2, 2);
-    for (let i = 0; i < 6; i++) {
-      const smBox = new THREE.Mesh(smallBoxGeo, new THREE.MeshStandardMaterial({ ...boxMatTemplate }));
-      smBox.add(new THREE.LineSegments(new THREE.EdgesGeometry(smallBoxGeo), edgesMat));
-      // Distribute in a circle around center
-      const angle = (i / 6) * Math.PI * 2;
-      smBox.position.set(Math.cos(angle) * 6, globalYOffset, Math.sin(angle) * 6);
-      boxGroup.add(smBox);
-    }
-    scene.add(boxGroup);
-    objects.boxGroup = boxGroup;
-
-    // 4. Time Axis / Line / Path
-    const pathGeo = new THREE.CylinderGeometry(0.1, 0.1, 20, 8);
-    pathGeo.rotateZ(Math.PI / 2); // Make horizontal
-    const pathMat = new THREE.MeshStandardMaterial({ color: 0xffaa00, emissive: 0xff5500, emissiveIntensity: 0.8 });
-    const pathLine = new THREE.Mesh(pathGeo, pathMat);
-    scene.add(pathLine);
-    objects.pathLine = pathLine;
-
-    // 5. Plane / Surface (For 'across' / 'along')
-    const planeGeo = new THREE.PlaneGeometry(20, 10);
-    planeGeo.rotateX(-Math.PI / 2);
-    const planeMat = new THREE.MeshStandardMaterial({ color: 0x002211, emissive: 0x005522, emissiveIntensity: 0.3, transparent: true, opacity: 0.5, side: THREE.DoubleSide });
-    const surfacePlane = new THREE.Mesh(planeGeo, planeMat);
-    scene.add(surfacePlane);
-    objects.surfacePlane = surfacePlane;
-
-    // Road (For 'across' / 'along')
-    const roadGroup = new THREE.Group();
-    const roadBase = new THREE.Mesh(
-      new THREE.BoxGeometry(6, 0.05, 24),
-      new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.9 })
-    );
-    roadGroup.add(roadBase);
-    // Subtle white/gray center line
-    const centerLineMat = new THREE.MeshBasicMaterial({ color: 0xaaaaaa, transparent: true, opacity: 0.8 });
-    for (let i = -11; i <= 11; i += 2) {
-      const dash = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.06, 1), centerLineMat);
-      dash.position.set(0, 0, i);
-      roadGroup.add(dash);
-    }
-    roadGroup.rotation.y = Math.PI / 4; // Top-left to bottom-right
-    scene.add(roadGroup);
-    objects.roadGroup = roadGroup;
-
-    // 6. Wall (for 'against')
-    const wallGeo = new THREE.BoxGeometry(0.5, 6, 6);
-    const wallMat = new THREE.MeshStandardMaterial({ ...boxMatTemplate }); // Match other boxes
-    const wall = new THREE.Mesh(wallGeo, wallMat);
-    wall.add(new THREE.LineSegments(new THREE.EdgesGeometry(wallGeo), edgesMat)); // Match other boxes' edges
-    scene.add(wall);
-    objects.wall = wall;
-
-    // 7. Main Sphere (Target Object)
-    const sphereRadius = 0.8;
-    const sphereGeo = new THREE.SphereGeometry(sphereRadius, 32, 32);
-    const sphereMat = new THREE.MeshStandardMaterial({ ...sphereMatTemplate });
-    const sphere = new THREE.Mesh(sphereGeo, sphereMat);
-    scene.add(sphere);
-    objects.sphere = sphere;
-
-    // 8. Companion Sphere (for 'with', 'as')
-    // Made unmistakably bright yellow-green as well to match
-    const companionMat = new THREE.MeshStandardMaterial({
-      color: 0x9acd32, emissive: 0x9acd32, emissiveIntensity: 0.8, roughness: 0.2, metalness: 0.1
-    });
-    const companionSphere = new THREE.Mesh(sphereGeo, companionMat);
-    scene.add(companionSphere);
-    objects.companionSphere = companionSphere;
-
-    // 9. Cutout Sphere (for 'of')
-    const holeMat = new THREE.MeshBasicMaterial({ color: 0x050510 }); // matches background to erase part of box
-    const holeSphere = new THREE.Mesh(new THREE.SphereGeometry(sphereRadius * 0.8, 32, 32), holeMat);
-    scene.add(holeSphere);
-    objects.holeSphere = holeSphere;
-
-    // Main Point (for 'at')
-    const pointGeo = new THREE.SphereGeometry(0.3, 16, 16);
-    const pointMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
-    const mainPoint = new THREE.Mesh(pointGeo, pointMat);
-    scene.add(mainPoint);
-    objects.mainPoint = mainPoint;
-
-
-    // Grid Helper (Floor)
-    const gridHelper = new THREE.GridHelper(30, 30, 0x00ffff, 0x003366);
-    gridHelper.position.y = -boxSize / 2 - 2 + globalYOffset;
-    gridHelper.material.transparent = true;
-    gridHelper.material.opacity = 0.3;
-    scene.add(gridHelper);
-
-    // Initial state: conceal everything except box1 and sphere
-    Object.values(objects).forEach(obj => obj.visible = false);
-    box1.visible = true;
-    sphere.visible = true;
-
-    // Window Resize & Orientation Change
-    function updateCameraForOrientation() {
-      const aspect = window.innerWidth / window.innerHeight;
-      camera.aspect = aspect;
-      // If portrait (mobile vertical), set FOV wider so the 3D scene doesn't clip
-      if (aspect < 1) {
-        camera.fov = 70;
-      } else {
-        camera.fov = 45;
-      }
-      camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
-    }
-
-    window.addEventListener('resize', updateCameraForOrientation);
-    window.addEventListener('orientationchange', updateCameraForOrientation);
-
-    // Initial call to set correct FOV
-    updateCameraForOrientation();
-
-    // Render loop
-    function animate() {
-      requestAnimationFrame(animate);
-      stars.rotation.y += 0.0005;
-      stars.rotation.x += 0.0002;
-      renderer.render(scene, camera);
-    }
-    animate();
-
-    // -------------------------
-    // Prepositions Data
-    // -------------------------
-    const prepositions = {
-      in: { en: "in", ja: "空間や容器の中にすっぽり入っている、包まれている状態。" },
-      at: { en: "at", ja: "地図上の「点」を指し示すように、特定の場所や時点にある状態。" },
-      on: { en: "on", ja: "何かの表面にぴったり接触して乗っている、または付着している状態。" },
-      off: { en: "off", ja: "接触していた面から離れる、切断される状態。" },
-      near: { en: "near", ja: "距離的・時間的に比較的近い位置にある状態。（くっついてはいない）" },
-      by: { en: "by", ja: "何かのすぐそば（近接）、またはそれを経由・手段としている状態。" },
-      above: { en: "above", ja: "基準より高い位置にある状態。（真上とは限らないが、より高い）" },
-      below: { en: "below", ja: "基準より低い位置にある状態。（真下とは限らない）" },
-      over: { en: "over", ja: "何かを乗り越える弧の動き、または覆いかぶさって真上にある状態。" },
-      under: { en: "under", ja: "何かの真下で覆われている、影響下にある状態。" },
-      between: { en: "between", ja: "はっきりと区別できる２つ（稀に複数）の間に位置する状態。" },
-      among: { en: "among", ja: "３つ以上の個別のものに取り囲まれている、群集の中にいる状態。" },
-      behind: { en: "behind", ja: "何かの背後に隠れている、後ろについていく状態。" },
-      against: { en: "against", ja: "何かに対抗して押し当てる、または逆らうベクトルがある状態。" },
-      to: { en: "to", ja: "明確な到達点（ゴール）に向かっている方向・到達。" },
-      toward: { en: "toward", ja: "ある方向に向いていること（到達点を示すわけではない）。" },
-      from: { en: "from", ja: "起点（スタート地点や出どころ）から離れていく方向。" },
-      "out of": { en: "out of", ja: "内側（中）から外へ出ていく動き。" },
-      into: { en: "into", ja: "外側から立体的な中へ入り込んでいく動きと変化。" },
-      through: { en: "through", ja: "トンネルや空間の一方の端から入り、もう一方へ通り抜ける状態。" },
-      across: { en: "across", ja: "平面や空間を横切る、一方の端から反対側へ渡る状態。" },
-      along: { en: "along", ja: "線状のもの（道や川など）に沿って平行に進む、または位置する状態。" },
-      around: { en: "around", ja: "何かの周りをぐるりと回る、または周辺に散らばる状態。" },
-      about: { en: "about", ja: "中心となるものの周辺にある、漠然と関連している状態。" },
-      before: { en: "before", ja: "時間軸（または順序）において、基準より前（左側）にある状態。" },
-      after: { en: "after", ja: "時間軸（または順序）において、基準より後（右側）にある状態。" },
-      during: { en: "during", ja: "ある特定の期間の最初から最後まで、またはその期間内のどこか。" },
-      since: { en: "since", ja: "過去のある時点を起点として、そこからずっと続いている状態。" },
-      "until (till)": { en: "until (till)", ja: "未来のある時点まで、その状態がずっと継続する限界点。" },
-      for: { en: "for", ja: "目的に向う方向性（ターゲット）や、対象への交換・恩恵・期間。" },
-      with: { en: "with", ja: "つながりや同伴。一緒にある、または道具として持っている状態。" },
-      of: { en: "of", ja: "全体の中に組み込まれている「切れない一部（部分と全体・性質・所属など）」を表す。" },
-      as: { en: "as", ja: "イコール関係。役割や状態が同じであることを表す。" }
-    };
-
-    const prepSelect = document.getElementById('preposition-select');
-    const pcPrepGrid = document.getElementById('pc-preposition-grid');
-
-    Object.keys(prepositions).forEach(prep => {
-      // Dropdown Option
-      const opt = document.createElement('option');
-      opt.value = prep;
-      opt.innerText = prep;
-      opt.className = 'bg-gray-900 text-cyan-400 font-sans'; // System font for dropdown options readability
-      prepSelect.appendChild(opt);
-
-      // PC Grid Button (More compact to fit 33 items without scrolling)
-      const btn = document.createElement('button');
-      btn.dataset.value = prep;
-      btn.innerText = prep;
-      btn.className = 'px-2.5 py-1 rounded font-gaming text-xs lg:text-sm bg-black/60 border border-cyan-800 text-cyan-500 hover:bg-cyan-900/70 hover:text-cyan-200 hover:border-cyan-400 transition-all focus:outline-none shadow-[0_0_5px_rgba(0,255,255,0.1)] hover:shadow-[0_0_10px_rgba(0,255,255,0.4)] whitespace-nowrap flex-grow-0';
-      btn.onclick = () => playAnim(prep);
-      pcPrepGrid.appendChild(btn);
-    });
-
-    prepSelect.addEventListener('change', (e) => {
-      if (e.target.value) {
-        playAnim(e.target.value);
-      }
-    });
-
-    // -------------------------
-    // Animation Engine
-    // -------------------------
-    let currentTimeline = null;
-    let cameraTimeline = null;
-
-    const topSurfaceY = (boxSize / 2) + sphereRadius;
-    const bottomSurfaceY = -(boxSize / 2) - sphereRadius - 0.2;
-
-    function resetScene() {
-      if (currentTimeline) currentTimeline.kill();
-      if (cameraTimeline) cameraTimeline.kill();
-      gsap.killTweensOf(Object.values(objects).map(o => o.position));
-      gsap.killTweensOf(Object.values(objects).map(o => o.rotation));
-      gsap.killTweensOf(camera.position);
-
-      // Reset visibility and main materials
-      Object.keys(objects).forEach(k => {
-        objects[k].visible = false;
-        // default opacities
-        if (objects[k].material && objects[k].material.transparent) {
-          objects[k].material.opacity = 0.8;
-          if (k === 'surfacePlane') objects[k].material.opacity = 0.5;
+        function toggleAllCategories(allCheckbox) {
+            const checkboxes = document.querySelectorAll('.cat-check');
+            checkboxes.forEach(cb => cb.checked = allCheckbox.checked);
         }
-      });
-      box1Mat.transparent = true;
-      box1Mat.opacity = 0.8;
-      box1Mat.emissiveIntensity = 0.5;
 
-      // Bring Camera to default (adjusted to position the scene higher on the screen by lowering the camera)
-      // To shift objects UP on the screen, we move the camera DOWN relative to them, or tilt the camera UP.
-      gsap.to(camera.position, {
-        x: 10, y: 4, z: 18,
-        duration: 1,
-        ease: "power2.out",
-        onUpdate: () => camera.lookAt(0, -2, 0)
-      });
-
-      // Reset default positions for commonly moved objects to prevent state bleeding
-      if (objects.box1) objects.box1.position.set(0, globalYOffset, 0);
-      if (objects.wall) objects.wall.position.set(2, globalYOffset, 0);
-      if (objects.companionSphere) objects.companionSphere.position.set(0, globalYOffset, 0);
-    }
-
-    // A dictionary of animation setup functions mapped to keys
-    const animations = {
-      in: () => {
-        objects.box1.visible = true;
-        objects.box1.position.set(0, globalYOffset, 0);
-        objects.sphere.visible = true;
-        sphere.position.set(0, 8 + globalYOffset, 0);
-        box1Mat.transparent = true;
-        currentTimeline = gsap.timeline();
-        currentTimeline.to(sphere.position, { y: globalYOffset, duration: 1.5, ease: "bounce.out" })
-          .to(box1Mat, { opacity: 0.2, emissiveIntensity: 0.1, duration: 0.5 }, "-=1.0");
-      },
-      at: () => {
-        objects.mainPoint.visible = true;
-        objects.mainPoint.position.set(0, globalYOffset, 0);
-        objects.sphere.visible = true;
-        sphere.position.set(-6, 4 + globalYOffset, 0);
-        // Snap to point exactly
-        currentTimeline = gsap.to(sphere.position, { x: 0, y: 0.5 + globalYOffset, z: 0, duration: 1.5, ease: "power3.out" });
-      },
-      on: () => {
-        objects.box1.visible = true;
-        objects.box1.position.set(0, globalYOffset, 0);
-        objects.sphere.visible = true;
-        sphere.position.set(0, 8 + globalYOffset, 0);
-        currentTimeline = gsap.to(sphere.position, { y: topSurfaceY + globalYOffset, duration: 1.5, ease: "bounce.out" });
-      },
-      off: () => {
-        objects.box1.visible = true;
-        objects.box1.position.set(0, globalYOffset, 0);
-        objects.sphere.visible = true;
-        sphere.position.set(0, topSurfaceY + globalYOffset, 0);
-
-        // Break contact: jump off like a cat (up, forward, and land)
-        currentTimeline = gsap.timeline();
-        // Move horizontally and rotate forward
-        currentTimeline.to(sphere.position, { x: 5, duration: 1.2, ease: "power1.inOut" }, 0)
-          .to(sphere.rotation, { z: -Math.PI, duration: 1.2, ease: "power1.inOut" }, 0);
-
-        // Vertical arc: jump up slightly, then fall to the ground with a bounce
-        currentTimeline.to(sphere.position, { y: topSurfaceY + 2 + globalYOffset, duration: 0.5, ease: "power2.out" }, 0)
-          .to(sphere.position, { y: -2 + sphereRadius + globalYOffset, duration: 0.7, ease: "bounce.out" }, 0.5);
-      },
-      near: () => {
-        objects.box1.visible = true;
-        objects.box1.position.set(0, globalYOffset, 0);
-        objects.sphere.visible = true;
-        sphere.position.set(8, globalYOffset, 0);
-        // Move somewhat close, but maintain a clear distant gap to distinguish from 'by'
-        currentTimeline = gsap.to(sphere.position, { x: boxSize / 2 + 3.0, duration: 1.5, ease: "power2.out" });
-      },
-      by: () => {
-        objects.box1.visible = true;
-        objects.box1.position.set(0, globalYOffset, 0);
-        objects.sphere.visible = true;
-        sphere.position.set(8, globalYOffset, 0); // Start from the exact same side as near
-        // Passing right by it (much closer than 'near')
-        currentTimeline = gsap.timeline();
-        // Stop very close and just pass slightly in front of it if we want, or just stop next to it.
-        // Let's just have it stop right next to the box, so the contrast with 'near' is obvious.
-        currentTimeline.to(sphere.position, { x: boxSize / 2 + 0.9, duration: 1.5, ease: "power2.out" });
-      },
-      above: () => {
-        objects.box1.visible = true;
-        objects.box1.position.set(0, globalYOffset, 0);
-        objects.sphere.visible = true;
-        sphere.position.set(0, topSurfaceY + 0.5 + globalYOffset, 0);
-        currentTimeline = gsap.to(sphere.position, { y: topSurfaceY + 2.5 + globalYOffset, duration: 2, ease: "power1.inOut", yoyo: true, repeat: -1 });
-      },
-      below: () => {
-        objects.box1.visible = true;
-        objects.box1.position.set(0, globalYOffset, 0);
-        objects.sphere.visible = true;
-        sphere.position.set(2, bottomSurfaceY - 0.5 + globalYOffset, 0);
-        currentTimeline = gsap.to(sphere.position, { y: bottomSurfaceY - 2 + globalYOffset, duration: 2, ease: "power1.inOut", yoyo: true, repeat: -1 });
-      },
-      over: () => {
-        objects.box1.visible = true;
-        objects.box1.position.set(0, globalYOffset, 0);
-        objects.sphere.visible = true;
-        sphere.position.set(-6, -1 + globalYOffset, 0);
-        currentTimeline = gsap.timeline();
-        currentTimeline.to(sphere.position, { x: 6, duration: 2, ease: "linear" }, 0)
-          .to(sphere.position, { y: topSurfaceY + 2 + globalYOffset, duration: 1, ease: "power2.out", yoyo: true, repeat: 1 }, 0);
-      },
-      under: () => {
-        objects.box1.visible = true;
-        objects.box1.position.set(0, globalYOffset, 0);
-        objects.sphere.visible = true;
-        sphere.position.set(8, bottomSurfaceY + globalYOffset, 0);
-        currentTimeline = gsap.to(sphere.position, { x: 0, duration: 1.5, ease: "back.out(1.5)" });
-      },
-      between: () => {
-        objects.box1.visible = true;
-        objects.box2.visible = true;
-        objects.sphere.visible = true;
-        // set boxes apart
-        objects.box1.position.set(-4, globalYOffset, 0);
-        objects.box2.position.set(4, globalYOffset, 0);
-
-        sphere.position.set(0, 8 + globalYOffset, 0);
-        currentTimeline = gsap.to(sphere.position, { y: globalYOffset, duration: 1.5, ease: "bounce.out" });
-      },
-      among: () => {
-        objects.boxGroup.visible = true;
-        objects.boxGroup.position.set(0, 0, 0);
-        objects.sphere.visible = true;
-        sphere.position.set(0, 10 + globalYOffset, 0);
-        // Add "bounce.out" so it lands and hops exactly like "between" does
-        currentTimeline = gsap.to(sphere.position, { y: globalYOffset, duration: 2, ease: "bounce.out" });
-      },
-      behind: () => {
-        objects.box1.visible = true;
-        objects.sphere.visible = true;
-
-        objects.box1.position.set(0, globalYOffset, 0);
-        sphere.position.set(0, globalYOffset, -5); // Behind the box relative to camera
-
-        // Use standard camera Y to lower them on the screen, but tilt up slightly if needed
-        // x: 0 is important for behind so we view it directly from the front
-        cameraTimeline = gsap.to(camera.position, {
-          x: 0, y: 6, z: 14,
-          duration: 1.5,
-          ease: "power2.out",
-          onUpdate: () => camera.lookAt(0, globalYOffset - 1, 0)
-        });
-
-        // Peek out
-        currentTimeline = gsap.timeline({ delay: 1.5, repeat: -1, yoyo: true });
-        currentTimeline.to(sphere.position, { x: 3, duration: 1, ease: "power1.inOut" })
-          .to(sphere.position, { x: -3, duration: 2, ease: "power1.inOut", delay: 1 });
-      },
-      against: () => {
-        objects.wall.visible = true;
-        objects.sphere.visible = true;
-        // Adjust height upward slightly as requested by user (between previous +1 and +3)
-        objects.wall.position.set(2, globalYOffset + 2, 0);
-        sphere.position.set(-6, globalYOffset + 2, 0);
-
-        currentTimeline = gsap.timeline();
-        // Fly and crash
-        currentTimeline.to(sphere.position, { x: 2 - 0.5 - sphereRadius, duration: 1, ease: "power3.in" })
-          .to(sphere.scale, { x: 0.6, y: 1.2, z: 1.2, duration: 0.1, yoyo: true, repeat: 1 }); // squish
-      },
-      to: () => {
-        objects.box1.visible = true;
-        objects.sphere.visible = true;
-        objects.box1.position.set(5, globalYOffset, 0);
-        sphere.position.set(-8, globalYOffset, 0);
-
-        currentTimeline = gsap.to(sphere.position, { x: 5 - boxSize / 2 - sphereRadius, duration: 1.5, ease: "power2.inOut" });
-      },
-      from: () => {
-        objects.box1.visible = true;
-        objects.sphere.visible = true;
-        objects.box1.position.set(-4, globalYOffset, 0);
-        sphere.position.set(-4 + boxSize / 2 + sphereRadius, globalYOffset, 0);
-
-        currentTimeline = gsap.to(sphere.position, { x: 8, duration: 2, ease: "power3.in" });
-      },
-      "out of": () => {
-        objects.box1.visible = true;
-        objects.sphere.visible = true;
-        objects.box1.position.set(0, globalYOffset, 0);
-        sphere.position.set(0, globalYOffset, 0);
-        box1Mat.transparent = true;
-        box1Mat.opacity = 0.2;
-
-        currentTimeline = gsap.to(sphere.position, {
-          x: 6, y: 3 + globalYOffset, z: 4, duration: 2, ease: "power2.out", delay: 0.5
-        });
-      },
-      into: () => {
-        objects.box1.visible = true;
-        objects.sphere.visible = true;
-        objects.box1.position.set(0, globalYOffset, 0);
-        sphere.position.set(-6, 4 + globalYOffset, 4);
-        box1Mat.transparent = true;
-        box1Mat.opacity = 0.8;
-
-        currentTimeline = gsap.timeline({ delay: 0.5 });
-        currentTimeline.to(sphere.position, { x: 0, y: globalYOffset, z: 0, duration: 1.5, ease: "power2.in" })
-          .to(box1Mat, { opacity: 0.2, duration: 0.3 }, "-=0.3");
-      },
-      through: () => {
-        objects.box1.visible = true;
-        objects.sphere.visible = true;
-        objects.box1.position.set(0, globalYOffset, 0);
-        sphere.position.set(0, globalYOffset, 8);
-        box1Mat.transparent = true;
-
-        currentTimeline = gsap.timeline();
-        currentTimeline.to(sphere.position, { z: -8, duration: 2.5, ease: "linear" }, 0)
-          .to(box1Mat, { opacity: 0.2, emissiveIntensity: 0.1, duration: 0.3 }, 0.8)
-          .to(box1Mat, { opacity: 0.8, emissiveIntensity: 0.5, duration: 0.3 }, 1.6);
-      },
-      across: () => {
-        // Use the diagonal road with center lines
-        objects.roadGroup.visible = true;
-        objects.roadGroup.position.set(0, globalYOffset, 0);
-
-        objects.sphere.visible = true;
-
-        // Start from outside the road on the left (bottom-left area)
-        // Road local width is 6 (x from -3 to 3). Left side is x=-5
-        const startX = -5 * 0.7071;
-        const startZ = 5 * 0.7071;
-        sphere.position.set(startX, sphereRadius + globalYOffset, startZ);
-
-        // Move clearly across the road to the outside right (top-right area)
-        const endX = 5 * 0.7071;
-        const endZ = -5 * 0.7071;
-        currentTimeline = gsap.to(sphere.position, { x: endX, z: endZ, duration: 2.5, ease: "linear" });
-      },
-      along: () => {
-        // Use the exact same diagonal road
-        objects.roadGroup.visible = true;
-        objects.roadGroup.position.set(0, globalYOffset, 0);
-
-        objects.sphere.visible = true;
-
-        // Position ON the road, visually on the right side of the screen (local x = +1.5)
-        const startX = (1.5 - 10) * 0.7071;
-        const startZ = (-1.5 - 10) * 0.7071; // math: x*sin(45) + z*cos(45)
-        sphere.position.set(startX, sphereRadius + globalYOffset, startZ);
-
-        // Move perfectly parallel down the length of the road
-        const endX = (1.5 + 10) * 0.7071;
-        const endZ = (-1.5 + 10) * 0.7071;
-        currentTimeline = gsap.to(sphere.position, { x: endX, z: endZ, duration: 4, ease: "linear" });
-      },
-      toward: () => {
-        objects.box1.visible = true;
-        objects.sphere.visible = true;
-        objects.box1.position.set(6, globalYOffset, -4);
-        sphere.position.set(-6, globalYOffset, 4);
-
-        // Moves in direction, doesn't necessarily hit it
-        currentTimeline = gsap.to(sphere.position, { x: 2, z: -1, duration: 2, ease: "power2.out" });
-      },
-      around: () => {
-        objects.box1.visible = true;
-        objects.sphere.visible = true;
-        objects.box1.position.set(0, globalYOffset, 0);
-        sphere.position.set(5, globalYOffset, 0);
-
-        // Orbit
-        const rotObj = { angle: 0 };
-        currentTimeline = gsap.to(rotObj, {
-          angle: Math.PI * 2,
-          duration: 3,
-          ease: "linear",
-          repeat: -1,
-          onUpdate: function () {
-            sphere.position.x = Math.cos(rotObj.angle) * 5;
-            sphere.position.z = Math.sin(rotObj.angle) * 5;
-          }
-        });
-      },
-      before: () => { // Time (Left)
-        objects.pathLine.visible = true;
-        objects.mainPoint.visible = true;
-        objects.sphere.visible = true;
-        objects.pathLine.position.set(0, globalYOffset, 0);
-        objects.mainPoint.position.set(0, globalYOffset, 0);
-
-        sphere.position.set(-5, globalYOffset, 0); // To the left
-        currentTimeline = gsap.to(sphere.position, { y: 1 + globalYOffset, duration: 0.5, yoyo: true, repeat: -1 });
-      },
-      after: () => { // Time (Right)
-        objects.pathLine.visible = true;
-        objects.mainPoint.visible = true;
-        objects.sphere.visible = true;
-        objects.pathLine.position.set(0, globalYOffset, 0);
-        objects.mainPoint.position.set(0, globalYOffset, 0);
-
-        sphere.position.set(5, globalYOffset, 0); // To the right
-        currentTimeline = gsap.to(sphere.position, { y: 1 + globalYOffset, duration: 0.5, yoyo: true, repeat: -1 });
-      },
-      since: () => {
-        objects.pathLine.visible = true;
-        objects.mainPoint.visible = true;
-        objects.sphere.visible = true;
-        objects.pathLine.position.set(0, globalYOffset, 0);
-        objects.mainPoint.position.set(-5, globalYOffset, 0); // The start point
-        sphere.position.set(-5, 1 + globalYOffset, 0); // Start
-
-        currentTimeline = gsap.to(sphere.position, {
-          x: 6, duration: 3, ease: "linear",
-          onUpdate: () => {
-            // leave a trail logic if we want, but simple movement is ok
-            sphere.scale.setLength(1 + (sphere.position.x + 5) * 0.1); // grows as time passes
-          }
-        });
-      },
-      "until (till)": () => {
-        objects.pathLine.visible = true;
-        objects.mainPoint.visible = true;
-        objects.sphere.visible = true;
-        objects.pathLine.position.set(0, globalYOffset, 0);
-        objects.mainPoint.position.set(5, globalYOffset, 0); // The limit point
-        sphere.position.set(-6, 1 + globalYOffset, 0);
-
-        // Match duration to 'since' (duration: 3) for the same feeling of time passing
-        currentTimeline = gsap.to(sphere.position, { x: 5, duration: 3, ease: "power2.in" });
-      },
-      during: () => {
-        objects.pathLine.visible = true;
-        objects.mainPoint.visible = true; // start
-        objects.sphere.visible = true;
-
-        objects.pathLine.position.set(0, globalYOffset, 0);
-        objects.mainPoint.position.set(-4, globalYOffset, 0);
-
-        // Add a second point for the end of the period (reusing companionSphere as a point)
-        objects.companionSphere.visible = true;
-        objects.companionSphere.scale.set(0.3, 0.3, 0.3); // Make it look like a point
-        objects.companionSphere.material.emissiveIntensity = 0; // turn off glow to look like a point
-        objects.companionSphere.material.color.setHex(0xffffff); // white point
-        objects.companionSphere.position.set(4, globalYOffset, 0);
-
-        // The sphere represents an event happening inside this period
-        sphere.position.set(-4, 1 + globalYOffset, 0);
-
-        // Move between the two points
-        currentTimeline = gsap.to(sphere.position, {
-          x: 4, duration: 3, ease: "linear",
-          onUpdate: () => {
-            // Pulse to show "ongoing activity" during this time
-            const pulse = 1 + Math.sin(Date.now() * 0.01) * 0.3;
-            sphere.scale.set(pulse, pulse, pulse);
-          }
-        });
-      },
-      about: () => {
-        objects.box1.visible = true;
-        objects.box1.position.set(0, globalYOffset, 0);
-        objects.sphere.visible = true;
-        sphere.position.set(3, 3 + globalYOffset, 3);
-
-        // Random wandering near the object
-        currentTimeline = gsap.timeline({ repeat: -1, yoyo: true });
-        currentTimeline.to(sphere.position, { x: -3, y: 1 + globalYOffset, z: 4, duration: 1.5, ease: "sine.inOut" })
-          .to(sphere.position, { x: -2, y: 4 + globalYOffset, z: -3, duration: 1.5, ease: "sine.inOut" })
-          .to(sphere.position, { x: 4, y: 2 + globalYOffset, z: -2, duration: 1.5, ease: "sine.inOut" });
-      },
-      for: () => {
-        objects.box1.visible = true;
-        objects.sphere.visible = true;
-        objects.box1.position.set(6, globalYOffset, 0);
-        sphere.position.set(-6, globalYOffset, 0);
-
-        // Move purposefully towards it as a target/beneficiary, but STOP BEFORE reaching it (box face is at x=4)
-        currentTimeline = gsap.to(sphere.position, { x: 1, duration: 1.5, ease: "power2.out" });
-        gsap.to(sphere.scale, { x: 1.2, y: 1.2, z: 1.2, duration: 1.5, yoyo: true, repeat: 1 });
-      },
-      with: () => {
-        objects.sphere.visible = true;
-        objects.companionSphere.visible = true; // A friend!
-        sphere.position.set(-6, globalYOffset, 0);
-        objects.companionSphere.position.set(-7, globalYOffset, 2);
-
-        // Move together
-        currentTimeline = gsap.timeline();
-        currentTimeline.to(sphere.position, { x: 6, duration: 3, ease: "linear" }, 0)
-          .to(objects.companionSphere.position, { x: 5, duration: 3, ease: "linear" }, 0);
-      },
-      as: () => {
-        objects.sphere.visible = true;
-        objects.companionSphere.visible = true;
-        // Equal footing
-        sphere.position.set(-2, globalYOffset, 0);
-        objects.companionSphere.position.set(2, globalYOffset, 0);
-
-        // Match scaling
-        currentTimeline = gsap.timeline({ repeat: -1, yoyo: true });
-        currentTimeline.to(sphere.scale, { x: 1.5, y: 1.5, z: 1.5, duration: 1 }, 0)
-          .to(objects.companionSphere.scale, { x: 1.5, y: 1.5, z: 1.5, duration: 1 }, 0);
-      },
-      of: () => {
-        objects.box1.visible = true;
-        objects.sphere.visible = true;
-        objects.holeSphere.visible = true; // Use the cutout trick
-
-        objects.box1.position.set(0, globalYOffset, 0);
-        box1Mat.transparent = false; // Solidify box to make hole clearly visible
-
-        // Position hole slightly inside the right face to simulate an indentation / crater
-        const facePos = new THREE.Vector3(1.7, globalYOffset, 0);
-        objects.holeSphere.position.copy(facePos);
-
-        // Sphere starts exactly at the face, looking like part of it
-        sphere.position.set(2, globalYOffset, 0);
-
-        currentTimeline = gsap.timeline();
-        // Do NOT fly away. Slightly pull out and then seat back in to emphasize it is an inseparable piece.
-        currentTimeline.fromTo(sphere.position,
-          { x: 1.7, y: globalYOffset, z: 0 },
-          { x: 2.5, duration: 1.5, ease: "power1.inOut", yoyo: true, repeat: -1 })
-          .fromTo(sphere.scale,
-            { x: 0.8, y: 0.8, z: 0.8 },
-            { x: 1.0, y: 1.0, z: 1.0, duration: 1.5, ease: "power1.inOut", yoyo: true, repeat: -1 }, 0);
-      }
-    };
-
-    function updateUI(prep) {
-      document.getElementById('explanation-title').innerText = prepositions[prep].en || prep;
-      // Add natural HTML line breaks for better mobile readability
-      let formattedJa = prepositions[prep].ja;
-      formattedJa = formattedJa.replace(/、/g, '、<br/>'); // break after commas
-      formattedJa = formattedJa.replace(/。（/g, '。<br/>（'); // break before parenthetical notes
-
-      document.getElementById('explanation-text').innerHTML = formattedJa;
-
-      // Sync select dropdown if animation was triggered programmatically
-      const prepSelect = document.getElementById('preposition-select');
-      if (prepSelect.value !== prep) {
-        prepSelect.value = prep;
-      }
-
-      // Sync PC Grid button highlight
-      const pcButtons = document.querySelectorAll('#pc-preposition-grid button');
-      pcButtons.forEach(btn => {
-        if (btn.dataset.value === prep) {
-          btn.classList.add('bg-cyan-600/50', 'text-white', 'border-cyan-300', 'shadow-[0_0_15px_rgba(0,255,255,0.6)]');
-          btn.classList.remove('bg-black/50', 'text-cyan-500', 'border-cyan-800', 'shadow-[0_0_5px_rgba(0,255,255,0.1)]');
-        } else {
-          btn.classList.remove('bg-cyan-600/50', 'text-white', 'border-cyan-300', 'shadow-[0_0_15px_rgba(0,255,255,0.6)]');
-          btn.classList.add('bg-black/50', 'text-cyan-500', 'border-cyan-800', 'shadow-[0_0_5px_rgba(0,255,255,0.1)]');
+        function updateAllCheckState() {
+            const allCheckbox = document.getElementById('check-all');
+            const checkboxes = document.querySelectorAll('.cat-check');
+            const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+            allCheckbox.checked = allChecked;
         }
-      });
-    }
 
-    window.playAnim = function (prep) {
-      updateUI(prep);
+        let currentQuestions = [];
+        let currentIndex = 0;
+        let score = 0;
+        let mistakes = [];
 
-      // Reset any scale
-      sphere.scale.set(1, 1, 1);
-      objects.companionSphere.scale.set(1, 1, 1);
-      objects.box1.scale.set(1, 1, 1);
+        // DOM Elements
+        const startScreen = document.getElementById('start-screen');
+        const questionScreen = document.getElementById('question-screen');
+        const resultScreen = document.getElementById('result-screen');
+        const feedbackOverlay = document.getElementById('feedback-overlay');
 
-      // Remove connection lines if any leftover
-      resetScene();
+        const qNum = document.getElementById('q-num');
+        const qSub = document.getElementById('q-sub');
+        const qText = document.getElementById('q-text');
+        const progressFill = document.getElementById('progress-fill');
 
-      if (animations[prep]) {
-        animations[prep]();
-      }
-    }
+        const typingArea = document.getElementById('typing-area');
+        const answerInput = document.getElementById('answer-input');
+        const choicesArea = document.getElementById('choices-area');
 
-    // Play default on load
-    setTimeout(() => { playAnim('in'); }, 1000);
+        // 配列をシャッフルするユーティリティ関数（Fisher-Yatesアルゴリズム）
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
 
-  </script>
+        function startTest() {
+            // チェックされているカテゴリを取得
+            const checkboxes = document.querySelectorAll('.cat-check:checked');
+            const selectedCategories = Array.from(checkboxes).map(cb => cb.value);
+
+            // 1つも選ばれていない場合はアラートを出す
+            if (selectedCategories.length === 0) {
+                alert("出題範囲を1つ以上えらんでね！");
+                return;
+            }
+
+            // 選択されたカテゴリでフィルタリング
+            let filteredQuestions = questions.filter(q => selectedCategories.includes(q.hint));
+
+            if (filteredQuestions.length === 0) {
+                // 万が一見つからなかった場合フェールセーフ
+                filteredQuestions = [...questions];
+            }
+
+            // 出題数のチェック
+            const countSelection = document.getElementById('question-count').value;
+            let targetCount = filteredQuestions.length;
+
+            if (countSelection !== "all") {
+                targetCount = parseInt(countSelection, 10);
+                if (filteredQuestions.length < targetCount) {
+                    alert(`問題数が足りません。選んだ範囲の単語は ${filteredQuestions.length} 個です。\n出題数を減らすか、範囲を増やしてね！`);
+                    return;
+                }
+            }
+
+            // チェックが通れば画面を切り替えて初期化
+            startScreen.classList.remove('active');
+            questionScreen.classList.add('active');
+            currentIndex = 0;
+            score = 0;
+            mistakes = [];
+
+            // テスト開始時に問題の順番をランダムにシャッフルする
+            shuffleArray(filteredQuestions);
+
+            // 必要な問題数だけを取得する
+            currentQuestions = filteredQuestions.slice(0, targetCount);
+
+            showQuestion();
+        }
+
+        // Web Speech API for Pronunciation
+        function playHint() {
+            const q = currentQuestions[currentIndex];
+            const speech = new SpeechSynthesisUtterance();
+            speech.text = q.en;
+            speech.lang = 'en-US';
+            speech.rate = 0.9; // 少しゆっくりめに発音
+            window.speechSynthesis.speak(speech);
+        }
+
+        function showQuestion() {
+            const q = currentQuestions[currentIndex];
+
+            // ヘッダー更新
+            qNum.textContent = currentIndex + 1;
+            document.getElementById('q-total').textContent = currentQuestions.length;
+            progressFill.style.width = `${((currentIndex) / currentQuestions.length) * 100}%`;
+
+            // 問題タイプごとの表示切替
+            if (q.type === 'typing') {
+                qSub.innerHTML = `この日本語、英語で書ける？<br><span style="font-size:0.85em; font-weight:normal;">（${q.hint}）</span>`;
+                qSub.style.color = "var(--primary)";
+                qText.textContent = q.jp;
+                typingArea.style.display = 'flex';
+                choicesArea.style.display = 'none';
+                answerInput.value = '';
+                // スマホ等で自動的にフォーカスしてキーボードを出す
+                setTimeout(() => answerInput.focus(), 100);
+            } else {
+                qSub.innerHTML = `この英単語の意味は？<br><span style="font-size:0.85em; font-weight:normal;">どれか選ぼう！</span>`;
+                qSub.style.color = "var(--secondary)";
+                qText.textContent = q.en;
+                typingArea.style.display = 'none';
+                choicesArea.style.display = 'grid';
+
+                // 選択肢ボタンの生成
+                choicesArea.innerHTML = '';
+                // 選択肢をシャッフルしてから表示
+                const shuffledChoices = [...q.choices];
+                shuffleArray(shuffledChoices);
+
+                shuffledChoices.forEach(choice => {
+                    const btn = document.createElement('button');
+                    btn.className = 'choice-btn';
+                    btn.textContent = choice;
+                    btn.onclick = () => checkChoiceAnswer(choice);
+                    choicesArea.appendChild(btn);
+                });
+            }
+        }
+
+        // タイピング解答のEnterキー対応
+        answerInput.addEventListener("keyup", function (event) {
+            if (event.key === "Enter") {
+                event.stopPropagation(); // バブリングを止めてdocumentのkeyupを発火させない
+                if (!feedbackOverlay.classList.contains("show")) {
+                    checkTypingAnswer();
+                }
+            }
+        });
+
+        // フィードバック画面のEnterキー対応
+        document.addEventListener("keydown", function (event) {
+            if (event.key === "Enter" && feedbackOverlay.classList.contains("show")) {
+                event.preventDefault(); // デフォルトスクロールなどを防ぐ
+                nextQuestion();
+            }
+        });
+
+        function checkTypingAnswer() {
+            const userInput = answerInput.value.trim().toLowerCase();
+            if (!userInput) return; // 空判定
+
+            // スマホキーボードを閉じる
+            answerInput.blur();
+
+            const q = currentQuestions[currentIndex];
+            const allowAlt = document.getElementById('allow-alt-answers').checked;
+
+            let isCorrect = (userInput === q.en.toLowerCase());
+
+            // 別解のチェック
+            if (!isCorrect && allowAlt && q.alt && q.alt.length > 0) {
+                if (q.alt.map(alt => alt.toLowerCase()).includes(userInput)) {
+                    isCorrect = true;
+                }
+            }
+
+            showFeedback(isCorrect, q.en, userInput);
+        }
+
+        function checkChoiceAnswer(choice) {
+            const q = currentQuestions[currentIndex];
+            const isCorrect = (choice === q.jp);
+            // q.jp は選択肢の正解（日本語）、q.en は英単語（これが表示したい正解テキスト）
+            showFeedback(isCorrect, q.en, choice);
+        }
+
+        function giveUp() {
+            // わからないボタンが押された時の処理（タイピング問題のみ）
+            // スマホキーボードを閉じる
+            answerInput.blur();
+            const q = currentQuestions[currentIndex];
+            showFeedback(false, q.en, "（わからない）", true);
+        }
+
+        function showFeedback(isCorrect, correctAnswer, userAnswer, isGivenUp = false) {
+            const q = currentQuestions[currentIndex];
+            const icon = document.getElementById('feedback-icon');
+            const text = document.getElementById('feedback-text');
+            const correctInfo = document.getElementById('feedback-correct-answer');
+
+            // 正解・不正解の効果音を再生（ブラウザのSpeechSynthesisを使った簡易音）
+            // より本格的な音源を使う場合はAudioタグがオススメです
+            const sound = new SpeechSynthesisUtterance();
+            sound.lang = 'ja-JP';
+
+            // アニメーションのリセット
+            icon.style.animation = 'none';
+            icon.offsetHeight; /* trigger reflow */
+            icon.style.animation = null;
+
+            if (isCorrect) {
+                score++;
+                sound.text = "ピンポーン";
+                sound.pitch = 2.0; // より明るく高い音に
+                sound.rate = 1.2;  // 少しテンポよく
+                icon.textContent = '⭕';
+                icon.className = 'feedback-icon color-correct';
+                text.textContent = '大正解！';
+                text.className = 'feedback-text color-correct';
+                correctInfo.innerHTML = `正解：<span style="color:var(--primary); font-size:1.5rem;">${correctAnswer}</span>`;
+            } else {
+                sound.text = "ブブー";
+                sound.pitch = 0.8; // 間違いは少し低め
+                icon.textContent = '❌';
+                icon.className = 'feedback-icon color-wrong';
+                if (isGivenUp) {
+                    text.textContent = '残念！';
+                } else {
+                    text.textContent = 'おしい！';
+                }
+                text.className = 'feedback-text color-wrong';
+                correctInfo.innerHTML = `正解：<span style="color:var(--primary); font-size:1.5rem;">${correctAnswer}</span>`;
+
+                // 間違いリストに保存
+                mistakes.push({
+                    q: q,
+                    userAnswer: userAnswer,
+                    correct: correctAnswer
+                });
+            }
+
+            // 音を鳴らす
+            window.speechSynthesis.speak(sound);
+
+            feedbackOverlay.classList.add('show');
+            document.getElementById('next-btn').focus();
+        }
+
+        function nextQuestion() {
+            feedbackOverlay.classList.remove('show');
+            currentIndex++;
+
+            if (currentIndex >= currentQuestions.length) {
+                progressFill.style.width = '100%';
+                setTimeout(showResult, 300);
+            } else {
+                showQuestion();
+            }
+        }
+
+        function showResult() {
+            questionScreen.classList.remove('active');
+            resultScreen.classList.add('active');
+
+            // スコア更新
+            const scoreVal = document.getElementById('score-val');
+            scoreVal.textContent = score;
+            const maxScoreDisplay = document.getElementById('score-max');
+            maxScoreDisplay.textContent = `/ ${currentQuestions.length}点`;
+
+            // メッセージ判定
+            const msg = document.getElementById('result-message');
+            if (score === currentQuestions.length) {
+                msg.textContent = "パーフェクト！🎉 あなたは天才！";
+                msg.style.color = "var(--secondary)";
+                document.querySelector('.score-circle').style.borderColor = "var(--secondary)";
+            } else if (score >= currentQuestions.length * 0.75) {
+                msg.textContent = "よくがんばったね！✨ あともう少し！";
+                msg.style.color = "#f39c12";
+            } else {
+                msg.textContent = "復習して次こそ満点を取ろう！💪";
+                msg.style.color = "var(--primary)";
+            }
+
+            // 間違いリストの表示
+            if (mistakes.length > 0) {
+                document.getElementById('mistakes-container').style.display = 'block';
+                const list = document.getElementById('mistakes-list');
+                list.innerHTML = '';
+
+                mistakes.forEach(m => {
+                    const item = document.createElement('div');
+                    item.className = 'mistake-item';
+
+                    let qText, aText;
+                    if (m.q.type === 'typing') {
+                        qText = m.q.jp + ` (${m.q.hint})`;
+                        aText = m.q.en;
+                    } else {
+                        qText = m.q.en;
+                        aText = m.q.jp;
+                    }
+
+                    item.innerHTML = `
+                    <i class="fa-solid fa-pen mistake-badge"></i>
+                    <div class="mistake-jp">${qText}</div>
+                    <div class="mistake-en">${aText}</div>
+                    <div class="mistake-user">あなたの回答: ${m.userAnswer || '(無回答)'}</div>
+                `;
+                    list.appendChild(item);
+                });
+            }
+        }
+    </script>
+
 </body>
 
 </html>
